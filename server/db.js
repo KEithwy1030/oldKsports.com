@@ -1,33 +1,27 @@
-// server/db.js
+// server/db.js (FINAL ZEABUR-READY VERSION)
 import mysql from 'mysql2';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-export const db = mysql.createConnection({
-    host: process.env.MYSQL_HOST || process.env.DB_HOST || "localhost",
-    user: process.env.MYSQL_USERNAME || process.env.DB_USER || "root",
-    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || "k19941030",
-    database: process.env.MYSQL_DATABASE || process.env.DB_NAME || "old_k_sports",
-    port: process.env.MYSQL_PORT || process.env.DB_PORT || 3306
-});
+// 这段代码会优先使用 Zeabur 自动注入的环境变量。
+// 如果在本地，它会使用你 .env 文件里的配置。
+const connectionConfig = {
+  host: process.env.MYSQL_HOST || 'localhost',
+  user: process.env.MYSQL_USERNAME || 'root', // 确保使用 MYSQL_USERNAME，与 Zeabur 保持一致
+  password: process.env.MYSQL_PASSWORD,      // 密码必须在 .env 或 Zeabur 变量中提供
+  database: process.env.MYSQL_DATABASE || 'old_k_sports',
+  port: parseInt(process.env.MYSQL_PORT || '3306', 10) // 确保端口是数字类型
+};
 
-// 添加错误处理
-db.on('error', (err) => {
-    console.error('数据库连接错误:', err.message);
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-        console.log('数据库连接丢失，尝试重连...');
-    } else {
-        console.log('数据库连接失败，但服务器将继续运行');
-    }
-});
+export const db = mysql.createConnection(connectionConfig);
 
-// 测试连接
-db.connect((err) => {
-    if (err) {
-        console.error('数据库连接失败:', err.message);
-        console.log('服务器将在无数据库模式下运行');
-    } else {
-        console.log('数据库连接成功');
-    }
+// 添加更健壮的连接测试和错误处理逻辑
+db.connect(error => {
+  if (error) {
+    console.error('FATAL: Error connecting to the database:', error);
+    // 在生产环境中，如果数据库连接失败，应该让程序崩溃退出，以便服务自动重启
+    process.exit(1); 
+  }
+  console.log('Successfully connected to the database.');
 });
