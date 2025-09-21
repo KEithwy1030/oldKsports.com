@@ -1,0 +1,40 @@
+{
+  "name": "oldksports-production",
+  "services": [
+    {
+      "name": "frontend",
+      "source": {
+        "type": "git"
+      },
+      "build": {
+        "commands": ["npm install", "npm run build"]
+      },
+      "deploy": {
+        "type": "static",
+        "outputDir": "dist"
+      },
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "name": "backend",
+      "source": {
+        "type": "git",
+        "rootDir": "server"
+      },
+      "build": {
+        "commands": ["npm install --production"]
+      },
+      "deploy": {
+        "type": "node",
+        "startCommand": "npm start"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "8800",
+        "CORS_ORIGIN": "https://oldksports.zeabur.app"
+      }
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+/* 图片优化样式 */
+.image-container {
+  /* 硬件加速 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+  
+  /* 图片渲染优化 */
+  image-rendering: high-quality;
+  
+  /* 抗锯齿 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 图片元素优化 */
+.optimized-image {
+  /* 渲染优化 */
+  image-rendering: high-quality;
+  
+  /* 硬件加速 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+  
+  /* 平滑过渡 */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* 图片网格优化 */
+.image-grid {
+  /* 子像素渲染 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  
+  /* 网格布局 */
+  display: grid;
+  gap: 4px; /* 恢复适当间隙 */
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: 1fr; /* 单行显示 */
+}
+
+/* 图片预览优化 */
+.image-preview {
+  /* 容器优化 */
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px; /* 恢复圆角 */
+  
+  /* 渲染优化 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* 图片加载状态 */
+.image-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 响应式图片 */
+@media (max-width: 768px) {
+  .image-grid {
+    grid-template-columns: repeat(3, 1fr); /* 保持3列布局 */
+    gap: 2px; /* 小屏幕减少间隙 */
+  }
+}
+
+@media (max-width: 480px) {
+  .image-grid {
+    grid-template-columns: repeat(3, 1fr); /* 小屏幕也保持3列 */
+    gap: 2px;
+  }
+}
