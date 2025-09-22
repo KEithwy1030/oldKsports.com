@@ -28,8 +28,7 @@
     "noImplicitAny": false,
     "noImplicitReturns": false,
     "noImplicitThis": false,
-    "exactOptionalPropertyTypes": false,
-    "skipLibCheck": true
+    "exactOptionalPropertyTypes": false
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
