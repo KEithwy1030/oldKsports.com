@@ -4,7 +4,8 @@
     {
       "name": "frontend",
       "source": {
-        "type": "git"
+        "type": "git",
+        "rootDir": "client"
       },
       "build": {
         "commands": ["npm install", "npm run build"]
@@ -14,7 +15,8 @@
         "outputDir": "dist"
       },
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "VITE_API_URL": "https://oldksports-backend.zeabur.app/api"
       }
     },
     {
@@ -32,8 +34,14 @@
       },
       "env": {
         "NODE_ENV": "production",
-        "PORT": "8800",
-        "CORS_ORIGIN": "https://oldksports.zeabur.app"
+        "PORT": "8080",
+        "CORS_ORIGIN": "https://oldksports.zeabur.app",
+        "MYSQL_HOST": "mysql.zeabur.internal",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USERNAME": "root",
+        "MYSQL_PASSWORD": "F7oX4Ewh19ZUd3ukL52Ci8bf0WDvzQT6",
+        "MYSQL_DATABASE": "old_k_sports",
+        "JWT_SECRET": "Z3!x8K$mN9@pL2#qR5_tw7*zF4&vH6^jE1%wQ4$bY9Q"
       }
     }
   ]
