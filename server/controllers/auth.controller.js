@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import NotificationService from '../services/notification.service.js';
+import { addUserLevel } from '../utils/userLevel.js';
 
 dotenv.config();
 
@@ -123,8 +124,9 @@ export const login = async (req, res) => {
             tokenLength: token.length 
         });
         
-        // Remove sensitive data
+        // Remove sensitive data and add user level
         const { password: _, ...userData } = user;
+        const userWithLevel = addUserLevel(userData);
         
         // Set cookie and return user data
         res.cookie("access_token", token, { 
@@ -133,7 +135,7 @@ export const login = async (req, res) => {
             sameSite: 'strict'
         }).status(200).json({
             success: true,
-            user: userData,
+            user: userWithLevel,
             token: token
         });
     } catch (err) {
