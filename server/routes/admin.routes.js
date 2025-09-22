@@ -1,4 +1,5 @@
-// server/routes/admin.routes.js
+// server/routes/admin.routes.fixed.js
+// 修复后的管理员路由文件
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { getDb } from '../db.js';
@@ -6,6 +7,9 @@ import fs from 'fs';
 import path from 'path';
 
 const router = express.Router();
+
+// 获取数据库连接实例
+const db = getDb();
 
 // 管理员权限中间件
 const requireAdmin = (req, res, next) => {
@@ -18,383 +22,97 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// 获取仪表板统计数据
+// 数据库查询辅助函数
+const dbQuery = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, result) => {
+      if (err) reject(err);
+      else resolve(result);
+    });
+  });
+};
+
+// 管理员仪表板统计
 router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // 获取总用户数
-    const totalUsersResult = await new Promise((resolve, reject) => {
-      getDb().query('SELECT COUNT(*) as count FROM users', (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 获取总帖子数
-    const totalPostsResult = await new Promise((resolve, reject) => {
-      getDb().query('SELECT COUNT(*) as count FROM posts', (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 获取总回复数
-    const totalRepliesResult = await new Promise((resolve, reject) => {
-      getDb().query('SELECT COUNT(*) as count FROM replies', (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 获取今日新增用户数
-    const todayUsersResult = await new Promise((resolve, reject) => {
-      getDb().query(
-        'SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = CURDATE()',
-        (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        }
-      );
-    });
-
-    // 获取今日新增帖子数
-    const todayPostsResult = await new Promise((resolve, reject) => {
-      getDb().query(
-        'SELECT COUNT(*) as count FROM posts WHERE DATE(created_at) = CURDATE()',
-        (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        }
-      );
-    });
-
-    // 获取今日新增回复数
-    const todayRepliesResult = await new Promise((resolve, reject) => {
-      getDb().query(
-        'SELECT COUNT(*) as count FROM replies WHERE DATE(created_at) = CURDATE()',
-        (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        }
-      );
-    });
-
-    // 获取最近7天用户增长数据
-    const userGrowthResult = await new Promise((resolve, reject) => {
-      getDb().query(`
-        SELECT DATE(created_at) as date, COUNT(*) as count 
-        FROM users 
-        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        GROUP BY DATE(created_at)
-        ORDER BY date DESC
-      `, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 获取最近7天帖子增长数据
-    const postGrowthResult = await new Promise((resolve, reject) => {
-      getDb().query(`
-        SELECT DATE(created_at) as date, COUNT(*) as count 
-        FROM posts 
-        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        GROUP BY DATE(created_at)
-        ORDER BY date DESC
-      `, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    const stats = {
-      totalUsers: totalUsersResult[0].count,
-      totalPosts: totalPostsResult[0].count,
-      totalReplies: totalRepliesResult[0].count,
-      todayUsers: todayUsersResult[0].count,
-      todayPosts: todayPostsResult[0].count,
-      todayReplies: todayRepliesResult[0].count,
-      userGrowth: userGrowthResult,
-      postGrowth: postGrowthResult,
-      onlineUsers: Math.floor(totalUsersResult[0].count * 0.1) // 模拟在线用户数
-    };
-
+    const [userStats] = await dbQuery('SELECT COUNT(*) as total_users FROM users');
+    const [postStats] = await dbQuery('SELECT COUNT(*) as total_posts FROM forum_posts');
+    const [replyStats] = await dbQuery('SELECT COUNT(*) as total_replies FROM forum_replies');
+    
     res.json({
       success: true,
-      data: stats
+      data: {
+        totalUsers: userStats[0].total_users,
+        totalPosts: postStats[0].total_posts,
+        totalReplies: replyStats[0].total_replies
+      }
     });
-
   } catch (error) {
-    console.error('获取仪表板统计数据失败:', error);
-    res.status(500).json({
-      success: false,
-      error: '获取统计数据失败'
-    });
+    console.error('获取仪表板统计失败:', error);
+    res.status(500).json({ success: false, error: '获取统计信息失败' });
   }
 });
 
-// 获取最近活动
+// 管理员活动日志
 router.get('/dashboard/activity', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // 获取最近帖子
-    const recentPosts = await new Promise((resolve, reject) => {
-      getDb().query(`
-        SELECT p.id, p.title, p.created_at, u.username
-        FROM posts p
-        JOIN users u ON p.user_id = u.id
-        ORDER BY p.created_at DESC
-        LIMIT 10
-      `, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 获取最近回复
-    const recentReplies = await new Promise((resolve, reject) => {
-      getDb().query(`
-        SELECT r.id, r.content, r.created_at, u.username, p.title as post_title
-        FROM replies r
-        JOIN users u ON r.user_id = u.id
-        JOIN posts p ON r.post_id = p.id
-        ORDER BY r.created_at DESC
-        LIMIT 10
-      `, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 获取最近注册用户
-    const recentUsers = await new Promise((resolve, reject) => {
-      getDb().query(`
-        SELECT id, username, email, created_at
-        FROM users
-        ORDER BY created_at DESC
-        LIMIT 10
-      `, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 合并并排序活动
-    const activities = [
-      ...recentPosts.map(post => ({
-        id: `post_${post.id}`,
-        type: 'post',
-        content: `发布了新帖子：${post.title}`,
-        user: post.username,
-        timestamp: post.created_at
-      })),
-      ...recentReplies.map(reply => ({
-        id: `reply_${reply.id}`,
-        type: 'reply',
-        content: `回复了帖子：${reply.post_title}`,
-        user: reply.username,
-        timestamp: reply.created_at
-      })),
-      ...recentUsers.map(user => ({
-        id: `user_${user.id}`,
-        type: 'user',
-        content: '新用户注册',
-        user: user.username,
-        timestamp: user.created_at
-      }))
-    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
-
+    const recentPosts = await dbQuery(`
+      SELECT p.*, u.username 
+      FROM forum_posts p 
+      JOIN users u ON p.author_id = u.id 
+      ORDER BY p.created_at DESC 
+      LIMIT 10
+    `);
+    
     res.json({
       success: true,
-      data: activities
+      data: recentPosts
     });
-
   } catch (error) {
-    console.error('获取最近活动失败:', error);
-    res.status(500).json({
-      success: false,
-      error: '获取活动数据失败'
+    console.error('获取活动日志失败:', error);
+    res.status(500).json({ success: false, error: '获取活动日志失败' });
+  }
+});
+
+// 系统状态检查
+router.get('/system/status', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // 检查数据库连接
+    await dbQuery('SELECT 1 as health_check');
+    
+    res.json({
+      success: true,
+      data: {
+        database: 'connected',
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('系统状态检查失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '系统状态检查失败',
+      data: {
+        database: 'disconnected',
+        timestamp: new Date().toISOString()
+      }
     });
   }
 });
 
-// 获取用户列表
+// 用户管理
 router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, search = '' } = req.query;
-    const offset = (page - 1) * limit;
-
-    let query = `
-      SELECT u.id, u.username, u.email, u.points, u.is_admin, u.created_at,
-             COUNT(DISTINCT p.id) as post_count,
-             COUNT(DISTINCT r.id) as reply_count
-      FROM users u
-      LEFT JOIN posts p ON u.id = p.user_id
-      LEFT JOIN replies r ON u.id = r.user_id
-    `;
-
-    const queryParams = [];
-
-    if (search) {
-      query += ' WHERE u.username LIKE ? OR u.email LIKE ?';
-      queryParams.push(`%${search}%`, `%${search}%`);
-    }
-
-    query += ' GROUP BY u.id ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
-    queryParams.push(parseInt(limit), parseInt(offset));
-
-    const users = await new Promise((resolve, reject) => {
-      getDb().query(query, queryParams, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 获取总数
-    let countQuery = 'SELECT COUNT(*) as total FROM users';
-    const countParams = [];
-
-    if (search) {
-      countQuery += ' WHERE username LIKE ? OR email LIKE ?';
-      countParams.push(`%${search}%`, `%${search}%`);
-    }
-
-    const totalResult = await new Promise((resolve, reject) => {
-      getDb().query(countQuery, countParams, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    res.json({
-      success: true,
-      data: {
-        users,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: totalResult[0].total,
-          pages: Math.ceil(totalResult[0].total / limit)
-        }
-      }
-    });
-
+    const users = await dbQuery(`
+      SELECT id, username, email, points, is_admin, created_at, last_login 
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+    
+    res.json({ success: true, data: users });
   } catch (error) {
     console.error('获取用户列表失败:', error);
-    res.status(500).json({
-      success: false,
-      error: '获取用户列表失败'
-    });
-  }
-});
-
-// 获取帖子列表
-router.get('/posts', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { page = 1, limit = 20, search = '' } = req.query;
-    const offset = (page - 1) * limit;
-
-    let query = `
-      SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at,
-             u.username, u.email,
-             COUNT(DISTINCT r.id) as reply_count
-      FROM posts p
-      JOIN users u ON p.user_id = u.id
-      LEFT JOIN replies r ON p.id = r.post_id
-    `;
-
-    const queryParams = [];
-
-    if (search) {
-      query += ' WHERE p.title LIKE ? OR p.content LIKE ?';
-      queryParams.push(`%${search}%`, `%${search}%`);
-    }
-
-    query += ' GROUP BY p.id ORDER BY p.created_at DESC LIMIT ? OFFSET ?';
-    queryParams.push(parseInt(limit), parseInt(offset));
-
-    const posts = await new Promise((resolve, reject) => {
-      getDb().query(query, queryParams, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 获取总数
-    let countQuery = 'SELECT COUNT(*) as total FROM posts';
-    const countParams = [];
-
-    if (search) {
-      countQuery += ' WHERE title LIKE ? OR content LIKE ?';
-      countParams.push(`%${search}%`, `%${search}%`);
-    }
-
-    const totalResult = await new Promise((resolve, reject) => {
-      getDb().query(countQuery, countParams, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    res.json({
-      success: true,
-      data: {
-        posts,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: totalResult[0].total,
-          pages: Math.ceil(totalResult[0].total / limit)
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('获取帖子列表失败:', error);
-    res.status(500).json({
-      success: false,
-      error: '获取帖子列表失败'
-    });
-  }
-});
-
-// 删除帖子
-router.delete('/posts/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // 先删除相关回复
-    await new Promise((resolve, reject) => {
-      getDb().query('DELETE FROM replies WHERE post_id = ?', [id], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 删除帖子
-    const result = await new Promise((resolve, reject) => {
-      getDb().query('DELETE FROM posts WHERE id = ?', [id], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        error: '帖子不存在'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: '帖子删除成功'
-    });
-
-  } catch (error) {
-    console.error('删除帖子失败:', error);
-    res.status(500).json({
-      success: false,
-      error: '删除帖子失败'
-    });
+    res.status(500).json({ success: false, error: '获取用户列表失败' });
   }
 });
 
@@ -402,130 +120,13 @@ router.delete('/posts/:id', authenticateToken, requireAdmin, async (req, res) =>
 router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-
-    // 检查是否是管理员
-    const userResult = await new Promise((resolve, reject) => {
-      getDb().query('SELECT is_admin FROM users WHERE id = ?', [id], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    if (userResult.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: '用户不存在'
-      });
-    }
-
-    if (userResult[0].is_admin) {
-      return res.status(403).json({
-        success: false,
-        error: '不能删除管理员账号'
-      });
-    }
-
-    // 删除用户相关数据
-    await new Promise((resolve, reject) => {
-      getDb().query('DELETE FROM replies WHERE user_id = ?', [id], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    await new Promise((resolve, reject) => {
-      getDb().query('DELETE FROM posts WHERE user_id = ?', [id], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    // 删除用户
-    const result = await new Promise((resolve, reject) => {
-      getDb().query('DELETE FROM users WHERE id = ?', [id], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-
-    res.json({
-      success: true,
-      message: '用户删除成功'
-    });
-
+    
+    await dbQuery('DELETE FROM users WHERE id = ?', [id]);
+    
+    res.json({ success: true, message: '用户删除成功' });
   } catch (error) {
     console.error('删除用户失败:', error);
-    res.status(500).json({
-      success: false,
-      error: '删除用户失败'
-    });
-  }
-});
-
-// 获取系统状态
-router.get('/system/status', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    // 检查存储空间使用率
-    const getStorageUsage = () => {
-      try {
-        const stats = fs.statSync(process.cwd());
-        // 这里简化处理，实际应该检查整个磁盘使用率
-        // 对于开发环境，我们假设存储空间正常
-        return {
-          used: 0,
-          total: 100,
-          percentage: 0,
-          status: 'normal'
-        };
-      } catch (error) {
-        return {
-          used: 0,
-          total: 100,
-          percentage: 0,
-          status: 'unknown'
-        };
-      }
-    };
-
-    // 检查数据库连接
-    const checkDatabaseConnection = () => {
-      return new Promise((resolve) => {
-        getDb().query('SELECT 1', (err) => {
-          resolve({
-            status: err ? 'error' : 'normal',
-            message: err ? 'Database connection failed' : 'Database connected'
-          });
-        });
-      });
-    };
-
-    const storageInfo = getStorageUsage();
-    const dbStatus = await checkDatabaseConnection();
-
-    const systemStatus = {
-      server: {
-        status: 'normal',
-        message: 'Server is running'
-      },
-      database: dbStatus,
-      storage: {
-        status: storageInfo.status,
-        usage: storageInfo.percentage,
-        message: storageInfo.percentage < 80 ? 'Storage space normal' : 'Storage space low'
-      }
-    };
-
-    res.json({
-      success: true,
-      data: systemStatus
-    });
-
-  } catch (error) {
-    console.error('获取系统状态失败:', error);
-    res.status(500).json({
-      success: false,
-      error: '获取系统状态失败'
-    });
+    res.status(500).json({ success: false, error: '删除用户失败' });
   }
 });
 
@@ -533,9 +134,7 @@ router.get('/system/status', authenticateToken, requireAdmin, async (req, res) =
 // 获取所有商家
 router.get('/merchants', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const [merchants] = await db.promise().query(
-      'SELECT * FROM merchants ORDER BY created_at DESC'
-    );
+    const merchants = await dbQuery('SELECT * FROM merchants ORDER BY created_at DESC');
     res.json({ success: true, data: merchants });
   } catch (error) {
     console.error('获取商家列表失败:', error);
@@ -548,7 +147,7 @@ router.post('/merchants', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { name, description, category, contact_info, website, logo_url } = req.body;
     
-    const [result] = await db.promise().query(
+    const result = await dbQuery(
       'INSERT INTO merchants (name, description, category, contact_info, website, logo_url, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [name, description, category, contact_info, website, logo_url, req.user.id]
     );
@@ -566,7 +165,7 @@ router.put('/merchants/:id', authenticateToken, requireAdmin, async (req, res) =
     const { id } = req.params;
     const { name, description, category, contact_info, website, logo_url } = req.body;
     
-    await db.promise().query(
+    await dbQuery(
       'UPDATE merchants SET name = ?, description = ?, category = ?, contact_info = ?, website = ?, logo_url = ? WHERE id = ?',
       [name, description, category, contact_info, website, logo_url, id]
     );
@@ -583,8 +182,8 @@ router.delete('/merchants/:id', authenticateToken, requireAdmin, async (req, res
   try {
     const { id } = req.params;
     
-    await db.promise().query('DELETE FROM merchants WHERE id = ?', [id]);
-
+    await dbQuery('DELETE FROM merchants WHERE id = ?', [id]);
+    
     res.json({ success: true, message: '商家删除成功' });
   } catch (error) {
     console.error('删除商家失败:', error);
@@ -598,11 +197,11 @@ router.patch('/merchants/:id/status', authenticateToken, requireAdmin, async (re
     const { id } = req.params;
     const { status } = req.body;
     
-    await db.promise().query(
+    await dbQuery(
       'UPDATE merchants SET status = ? WHERE id = ?',
       [status, id]
     );
-
+    
     res.json({ success: true, message: '商家状态更新成功' });
   } catch (error) {
     console.error('更新商家状态失败:', error);
@@ -614,7 +213,7 @@ router.patch('/merchants/:id/status', authenticateToken, requireAdmin, async (re
 // 获取所有黑榜记录
 router.get('/blacklist', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const [entries] = await db.promise().query(`
+    const entries = await dbQuery(`
       SELECT b.*, 
              u1.username as creator_username,
              u2.username as verifier_username
@@ -635,7 +234,7 @@ router.post('/blacklist', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { merchant_name, violation_type, description, evidence_urls, severity } = req.body;
     
-    const [result] = await db.promise().query(
+    const result = await dbQuery(
       'INSERT INTO blacklist (merchant_name, violation_type, description, evidence_urls, severity, created_by) VALUES (?, ?, ?, ?, ?, ?)',
       [merchant_name, violation_type, description, evidence_urls, severity, req.user.id]
     );
@@ -653,11 +252,15 @@ router.put('/blacklist/:id', authenticateToken, requireAdmin, async (req, res) =
     const { id } = req.params;
     const { merchant_name, violation_type, description, evidence_urls, severity } = req.body;
     
-    await db.promise().query(
+    const result = await dbQuery(
       'UPDATE blacklist SET merchant_name = ?, violation_type = ?, description = ?, evidence_urls = ?, severity = ? WHERE id = ?',
       [merchant_name, violation_type, description, evidence_urls, severity, id]
     );
-
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: '黑榜记录未找到' });
+    }
+    
     res.json({ success: true, message: '黑榜记录更新成功' });
   } catch (error) {
     console.error('更新黑榜记录失败:', error);
@@ -670,8 +273,8 @@ router.delete('/blacklist/:id', authenticateToken, requireAdmin, async (req, res
   try {
     const { id } = req.params;
     
-    await db.promise().query('DELETE FROM blacklist WHERE id = ?', [id]);
-
+    await dbQuery('DELETE FROM blacklist WHERE id = ?', [id]);
+    
     res.json({ success: true, message: '黑榜记录删除成功' });
   } catch (error) {
     console.error('删除黑榜记录失败:', error);
@@ -679,23 +282,36 @@ router.delete('/blacklist/:id', authenticateToken, requireAdmin, async (req, res
   }
 });
 
-// 更新黑榜记录状态
-router.patch('/blacklist/:id/status', authenticateToken, requireAdmin, async (req, res) => {
+// 验证黑榜记录
+router.patch('/blacklist/:id/verify', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { verified, verification_notes } = req.body;
     
-    // 如果状态变为verified，记录审核者
-    const updateData = status === 'verified' 
-      ? ['UPDATE blacklist SET status = ?, verified_by = ? WHERE id = ?', [status, req.user.id, id]]
-      : ['UPDATE blacklist SET status = ? WHERE id = ?', [status, id]];
+    const updateData = [];
+    const updateValues = [];
     
-    await db.promise().query(...updateData);
-
-    res.json({ success: true, message: '黑榜记录状态更新成功' });
+    if (verified !== undefined) {
+      updateData.push('verified = ?');
+      updateValues.push(verified);
+    }
+    
+    if (verification_notes !== undefined) {
+      updateData.push('verification_notes = ?');
+      updateValues.push(verification_notes);
+    }
+    
+    updateData.push('verified_by = ?', 'verified_at = NOW()');
+    updateValues.push(req.user.id, id);
+    
+    const sql = `UPDATE blacklist SET ${updateData.join(', ')} WHERE id = ?`;
+    
+    await dbQuery(sql, updateValues);
+    
+    res.json({ success: true, message: '黑榜记录验证成功' });
   } catch (error) {
-    console.error('更新黑榜记录状态失败:', error);
-    res.status(500).json({ success: false, error: '更新黑榜记录状态失败' });
+    console.error('验证黑榜记录失败:', error);
+    res.status(500).json({ success: false, error: '验证黑榜记录失败' });
   }
 });
 
