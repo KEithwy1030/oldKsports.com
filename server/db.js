@@ -24,14 +24,16 @@ const connectionConfig = {
   password: process.env.MYSQL_PASSWORD,
   database: DATABASE_NAME,
   port: parseInt(process.env.MYSQL_PORT || '3306', 10),
-  // 增加连接超时和重试配置
+  // 使用MySQL2支持的配置选项
   connectTimeout: 30000, // 30秒连接超时
-  acquireTimeout: 30000, // 30秒获取连接超时
-  timeout: 30000, // 30秒查询超时
-  reconnect: true, // 自动重连
-  // 增加连接池配置以提高稳定性
+  // 连接池配置
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // 重连配置
+  acquireTimeout: 30000,
+  // 其他有用的配置
+  multipleStatements: false,
+  charset: 'utf8mb4'
 };
 
 // 使用连接池而不是单个连接
