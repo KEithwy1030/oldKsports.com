@@ -12,13 +12,17 @@ console.log('MYSQL_PASSWORD:', process.env.MYSQL_PASSWORD ? '***' : 'undefined')
 console.log('MYSQL_DATABASE:', process.env.MYSQL_DATABASE);
 console.log('MYSQL_PORT:', process.env.MYSQL_PORT);
 
+// 强制使用指定的数据库名称
+const DATABASE_NAME = 'old_k_sports';
+console.log('Forcing database name to:', DATABASE_NAME);
+
 // 这段代码会优先使用 Zeabur 自动注入的环境变量。
 // 如果在本地，它会使用你 .env 文件里的配置。
 const connectionConfig = {
   host: process.env.MYSQL_HOST || 'localhost',
   user: process.env.MYSQL_USERNAME || 'root', // 确保使用 MYSQL_USERNAME，与 Zeabur 保持一致
   password: process.env.MYSQL_PASSWORD,      // 密码必须在 .env 或 Zeabur 变量中提供
-  database: process.env.MYSQL_DATABASE || 'old_k_sports',
+  database: DATABASE_NAME, // 强制使用指定的数据库名称
   port: parseInt(process.env.MYSQL_PORT || '3306', 10) // 确保端口是数字类型
 };
 
