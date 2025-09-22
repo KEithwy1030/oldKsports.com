@@ -4,11 +4,6 @@
 import { db } from './db.js';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-// 获取当前文件的目录路径
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const migrateDatabase = async () => {
     try {
@@ -16,37 +11,95 @@ const migrateDatabase = async () => {
         
         // 1. 创建表结构
         console.log('1. 创建数据库表结构...');
-        const sqlPath = path.join(__dirname, 'database_schema.sql');
         
-        if (!fs.existsSync(sqlPath)) {
-            console.error(`SQL 文件不存在: ${sqlPath}`);
-            throw new Error(`SQL 文件不存在: ${sqlPath}`);
-        }
+        // 直接在代码中定义 SQL 语句
+        const sqlStatements = [
+            `CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) NOT NULL UNIQUE,
+                email VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                points INT DEFAULT 0,
+                is_admin BOOLEAN DEFAULT FALSE,
+                avatar VARCHAR(255) DEFAULT NULL,
+                has_uploaded_avatar BOOLEAN DEFAULT FALSE,
+                total_posts INT DEFAULT 0,
+                total_replies INT DEFAULT 0,
+                consecutive_checkins INT DEFAULT 0,
+                last_checkin_date DATE DEFAULT NULL,
+                reset_token VARCHAR(255) DEFAULT NULL,
+                reset_token_expires DATETIME DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS forum_posts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                content TEXT NOT NULL,
+                author_id INT NOT NULL,
+                category VARCHAR(50) DEFAULT 'general',
+                views INT DEFAULT 0,
+                likes INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+            )`,
+            `CREATE TABLE IF NOT EXISTS forum_replies (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                post_id INT NOT NULL,
+                author_id INT NOT NULL,
+                content TEXT NOT NULL,
+                likes INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE,
+                FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+            )`,
+            `CREATE TABLE IF NOT EXISTS notifications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                type VARCHAR(50) DEFAULT 'info',
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )`,
+            `CREATE TABLE IF NOT EXISTS messages (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                sender_id INT NOT NULL,
+                receiver_id INT NOT NULL,
+                content TEXT NOT NULL,
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`,
+            `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+            `CREATE INDEX IF NOT EXISTS idx_forum_posts_author ON forum_posts(author_id)`,
+            `CREATE INDEX IF NOT EXISTS idx_forum_posts_category ON forum_posts(category)`,
+            `CREATE INDEX IF NOT EXISTS idx_forum_replies_post ON forum_replies(post_id)`,
+            `CREATE INDEX IF NOT EXISTS idx_forum_replies_author ON forum_replies(author_id)`,
+            `CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id)`,
+            `CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id)`,
+            `CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id)`
+        ];
         
-        const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-        
-        const statements = sqlContent
-            .split(';')
-            .map(stmt => stmt.trim())
-            .filter(stmt => stmt.length > 0);
-        
-        for (const statement of statements) {
-            if (statement.toLowerCase().includes('create table') || 
-                statement.toLowerCase().includes('create index')) {
-                
-                console.log(`执行: ${statement.substring(0, 50)}...`);
-                
-                await new Promise((resolve, reject) => {
-                    db.query(statement, (err, result) => {
-                        if (err) {
-                            console.error('SQL 执行错误:', err);
-                            reject(err);
-                        } else {
-                            resolve(result);
-                        }
-                    });
+        for (const statement of sqlStatements) {
+            console.log(`执行 SQL: ${statement.substring(0, 50)}...`);
+            
+            await new Promise((resolve, reject) => {
+                db.query(statement, (err, result) => {
+                    if (err) {
+                        console.error('SQL 执行错误:', err);
+                        reject(err);
+                    } else {
+                        console.log('SQL 执行成功');
+                        resolve(result);
+                    }
                 });
-            }
+            });
         }
         
         // 2. 检查是否需要插入默认数据
@@ -65,7 +118,7 @@ const migrateDatabase = async () => {
             
             // 尝试导入本地数据
             try {
-                const exportPath = path.join(__dirname, 'local-database-export.json');
+                const exportPath = path.join(process.cwd(), 'local-database-export.json');
                 if (fs.existsSync(exportPath)) {
                     console.log('找到本地数据导出文件，开始导入...');
                     const exportData = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
