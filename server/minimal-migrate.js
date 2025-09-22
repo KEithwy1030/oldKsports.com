@@ -31,17 +31,17 @@ const minimalMigrate = async () => {
             )
         `;
         
-        await new Promise((resolve, reject) => {
-            db.query(createUsersTable, (err, result) => {
-                if (err) {
-                    console.error('创建用户表失败:', err);
-                    reject(err);
-                } else {
-                    console.log('✅ 用户表创建成功');
-                    resolve(result);
-                }
+            await new Promise((resolve, reject) => {
+                getDb().query(createUsersTable, (err, result) => {
+                    if (err) {
+                        console.error('创建用户表失败:', err);
+                        reject(err);
+                    } else {
+                        console.log('✅ 用户表创建成功');
+                        resolve(result);
+                    }
+                });
             });
-        });
 
         // 创建商家表
         console.log('创建商家表...');
@@ -61,21 +61,21 @@ const minimalMigrate = async () => {
             )
         `;
         
-        await new Promise((resolve, reject) => {
-            db.query(createMerchantsTable, (err, result) => {
-                if (err) {
-                    console.error('创建商家表失败:', err);
-                    reject(err);
-                } else {
-                    console.log('✅ 商家表创建成功');
-                    resolve(result);
-                }
+            await new Promise((resolve, reject) => {
+                getDb().query(createMerchantsTable, (err, result) => {
+                    if (err) {
+                        console.error('创建商家表失败:', err);
+                        reject(err);
+                    } else {
+                        console.log('✅ 商家表创建成功');
+                        resolve(result);
+                    }
+                });
             });
-        });
         
         // 检查现有用户数量
         const userCount = await new Promise((resolve, reject) => {
-            db.query('SELECT COUNT(*) as count FROM users', (err, result) => {
+            getDb().query('SELECT COUNT(*) as count FROM users', (err, result) => {
                 if (err) reject(err);
                 else resolve(result[0].count);
             });

@@ -1,48 +1,68 @@
-// server/db.js (ORIGINAL WORKING VERSION)
+// server/db.js - ZEABUR PRODUCTION VERSION
 import mysql from 'mysql2';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 // 调试：打印环境变量
-console.log('Database connection environment variables:');
+console.log('=== Database Connection Debug ===');
 console.log('MYSQL_HOST:', process.env.MYSQL_HOST);
 console.log('MYSQL_USERNAME:', process.env.MYSQL_USERNAME);
 console.log('MYSQL_PASSWORD:', process.env.MYSQL_PASSWORD ? '***' : 'undefined');
 console.log('MYSQL_DATABASE:', process.env.MYSQL_DATABASE);
 console.log('MYSQL_PORT:', process.env.MYSQL_PORT);
+console.log('NODE_ENV:', process.env.NODE_ENV);
 
-// 强制使用指定的数据库名称
-const DATABASE_NAME = 'old_k_sports';
-console.log('Forcing database name to:', DATABASE_NAME);
+// 使用Zeabur自动生成的数据库名称，而不是强制覆盖
+const DATABASE_NAME = process.env.MYSQL_DATABASE || 'old_k_sports';
+console.log('Using database name:', DATABASE_NAME);
 
-// 这段代码会优先使用 Zeabur 自动注入的环境变量。
-// 如果在本地，它会使用你 .env 文件里的配置。
+// 数据库连接配置 - 使用Zeabur自动生成的变量
 const connectionConfig = {
   host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USERNAME || 'root', // 确保使用 MYSQL_USERNAME，与 Zeabur 保持一致
-  password: process.env.MYSQL_PASSWORD,      // 密码必须在 .env 或 Zeabur 变量中提供
-  database: DATABASE_NAME, // 强制使用指定的数据库名称
-  port: parseInt(process.env.MYSQL_PORT || '3306', 10) // 确保端口是数字类型
+  user: process.env.MYSQL_USERNAME || 'root',
+  password: process.env.MYSQL_PASSWORD,
+  database: DATABASE_NAME,
+  port: parseInt(process.env.MYSQL_PORT || '3306', 10),
+  // 添加连接超时和重试配置
+  connectTimeout: 60000,
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true,
+  // 确保连接池配置
+  connectionLimit: 10,
+  queueLimit: 0
 };
 
-// 延迟创建连接，确保环境变量已加载
+console.log('Connection config:', {
+  ...connectionConfig,
+  password: connectionConfig.password ? '***' : 'undefined'
+});
+
+// 创建连接池而不是单连接
 let db = null;
 
 export const getDb = () => {
   if (!db) {
-    console.log('Creating database connection...');
-    db = mysql.createConnection(connectionConfig);
-    
-    // 添加更健壮的连接测试和错误处理逻辑
-    db.connect(error => {
-      if (error) {
-        console.error('FATAL: Error connecting to the database:', error);
-        // 在生产环境中，如果数据库连接失败，应该让程序崩溃退出，以便服务自动重启
-        process.exit(1); 
-      }
-      console.log('Successfully connected to the database.');
-    });
+    console.log('Creating database connection pool...');
+    try {
+      db = mysql.createPool(connectionConfig);
+      
+      // 测试连接
+      db.getConnection((error, connection) => {
+        if (error) {
+          console.error('FATAL: Error getting database connection:', error);
+          process.exit(1);
+        } else {
+          console.log('✅ Successfully connected to the database.');
+          connection.release();
+        }
+      });
+      
+    } catch (error) {
+      console.error('FATAL: Error creating database pool:', error);
+      process.exit(1);
+    }
   }
   return db;
 };
