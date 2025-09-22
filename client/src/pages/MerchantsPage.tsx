@@ -17,7 +17,7 @@ const MerchantsPage: React.FC = () => {
     const fetchMerchants = async () => {
       try {
         // 使用公开的商家API端点，不需要管理员权限
-        const response = await fetch('http://localhost:3001/api/merchants');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/merchants`);
         if (response.ok) {
           const data = await response.json();
           if (data.success) {

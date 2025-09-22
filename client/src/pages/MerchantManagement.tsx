@@ -76,7 +76,7 @@ const MerchantManagement: React.FC = () => {
   const fetchMerchants = async () => {
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch('http://localhost:3001/api/admin/merchants', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/merchants`, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
@@ -100,7 +100,7 @@ const MerchantManagement: React.FC = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch('http://localhost:3001/api/admin/merchants', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/merchants`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ const MerchantManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch(`http://localhost:3001/api/admin/merchants/${editingMerchant.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/merchants/${editingMerchant.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +164,7 @@ const MerchantManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch(`http://localhost:3001/api/admin/merchants/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/merchants/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -186,7 +186,7 @@ const MerchantManagement: React.FC = () => {
   const handleStatusChange = async (id: number, status: string) => {
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch(`http://localhost:3001/api/admin/merchants/${id}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/merchants/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

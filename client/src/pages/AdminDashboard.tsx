@@ -74,7 +74,7 @@ const AdminDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       // 获取统计数据
-      const statsResponse = await fetch('http://localhost:3001/api/admin/dashboard/stats', {
+      const statsResponse = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/dashboard/stats`, {
         credentials: 'include'
       });
       
@@ -97,7 +97,7 @@ const AdminDashboard: React.FC = () => {
       }
 
       // 获取最近活动
-      const activityResponse = await fetch('http://localhost:3001/api/admin/dashboard/activity', {
+      const activityResponse = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/dashboard/activity`, {
         credentials: 'include'
       });
       
@@ -112,7 +112,7 @@ const AdminDashboard: React.FC = () => {
       }
 
       // 获取系统状态
-      const systemResponse = await fetch('http://localhost:3001/api/admin/system/status', {
+      const systemResponse = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/system/status`, {
         credentials: 'include'
       });
       
