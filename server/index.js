@@ -173,14 +173,14 @@ app.delete("/api/admin/posts/clear", authenticateToken, async (req, res) => {
     }
     
     await new Promise((resolve, reject) => {
-      db.query('DELETE FROM forum_posts', (err, results) => {
+      getDb().query('DELETE FROM forum_posts', (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
     });
     
     await new Promise((resolve, reject) => {
-      db.query('ALTER TABLE forum_posts AUTO_INCREMENT = 1', (err, results) => {
+      getDb().query('ALTER TABLE forum_posts AUTO_INCREMENT = 1', (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
