@@ -159,9 +159,17 @@ const simpleMigrate = async () => {
         
         console.log(`当前用户数量: ${userCount}`);
         
-        // 如果没有用户，创建管理员账号
-        if (userCount === 0) {
-            console.log('创建默认管理员账号...');
+        // 检查并创建管理员账号
+        console.log('检查管理员账号是否存在...');
+        const existingAdmin = await new Promise((resolve, reject) => {
+            db.query('SELECT id FROM users WHERE email = ? OR username = ?', ['552319164@qq.com', '老k'], (err, result) => {
+                if (err) reject(err);
+                else resolve(result);
+            });
+        });
+        
+        if (existingAdmin.length === 0) {
+            console.log('管理员账号不存在，正在创建...');
             const bcrypt = await import('bcryptjs');
             const salt = bcrypt.genSaltSync(10);
             const hashedPassword = bcrypt.hashSync('Kk19941030', salt);
@@ -177,10 +185,15 @@ const simpleMigrate = async () => {
                         reject(err);
                     } else {
                         console.log('✅ 管理员账号创建成功');
+                        console.log('   用户名: 老k');
+                        console.log('   邮箱: 552319164@qq.com');
+                        console.log('   密码: Kk19941030');
                         resolve(result);
                     }
                 });
             });
+        } else {
+            console.log('✅ 管理员账号已存在');
         }
         
         console.log('✅ 简化数据库迁移完成！');
