@@ -21,9 +21,17 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8800; // 生产环境端口或本地开发端口
 
-const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+// 支持多个CORS源，包括生产环境的前端域名
+const corsOrigins = [
+  process.env.CORS_ORIGIN,
+  "https://oldksports.zeabur.app",
+  "http://localhost:5173"
+].filter(Boolean); // 过滤掉undefined值
+
+console.log('CORS Origins:', corsOrigins);
+
 app.use(cors({ 
-  origin: corsOrigin, 
+  origin: corsOrigins.length > 0 ? corsOrigins : "http://localhost:5173", 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
