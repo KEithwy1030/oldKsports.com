@@ -7,6 +7,7 @@ import userStatsRoutes from "./routes/userStats.js";
 import adminRoutes from "./routes/admin.routes.js";
 import notificationRoutes from "./routes/notifications.js";
 import messageRoutes from "./routes/messages.js";
+import merchantsRoutes from "./routes/merchants.js";
 import cookieParser from "cookie-parser";
 import { authenticateToken } from "./middleware/auth.js";
 import cors from "cors";
@@ -146,6 +147,7 @@ app.use("/api/user-stats", userStatsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/merchants", merchantsRoutes);
 
 // 检查当前用户权限的API端点
 app.get("/api/admin/check", authenticateToken, async (req, res) => {
