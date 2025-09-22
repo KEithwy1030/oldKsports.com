@@ -227,16 +227,6 @@ const startServer = async () => {
         const simpleMigrate = await import('./simple-migrate.js');
         await simpleMigrate.default();
         
-        // 修复数据库表结构
-        console.log('修复数据库表结构...');
-        const fixDatabase = await import('./fix-database-structure.js');
-        await fixDatabase.default();
-        
-        // 修复管理员账号
-        console.log('修复管理员账号...');
-        const fixAdmin = await import('./fix-admin-account.js');
-        await fixAdmin.default();
-        
         // 启动服务器
         app.listen(PORT, () => {
             console.log(`Backend server is running on port ${PORT}!`);

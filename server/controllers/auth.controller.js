@@ -82,18 +82,22 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        console.log('Login request received:', { username: req.body.username, email: req.body.email });
+        const { username, email, password } = req.body;
+        
+        // 支持用户名或邮箱登录
+        const identifier = username || email;
         
         // Validate required fields
-        if (!username || !password) {
+        if (!identifier || !password) {
             return res.status(400).json({ 
                 success: false, 
-                message: "用户名和密码都是必填项" 
+                message: "用户名/邮箱和密码都是必填项" 
             });
         }
         
         // Find user by username or email
-        const users = await findUserByUsernameOrEmail(username);
+        const users = await findUserByUsernameOrEmail(identifier);
         if (users.length === 0) {
             return res.status(404).json({ 
                 success: false, 
