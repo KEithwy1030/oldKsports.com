@@ -15,6 +15,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { db } from "./db.js";
+import initDatabase from "./init-database.js";
 
 dotenv.config();
 
@@ -218,7 +219,23 @@ app.get("/api/merchants", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-    console.log(`Backend server is running on port ${PORT}!`);
-    console.log("Database: MySQL");
-});
+// 启动服务器
+const startServer = async () => {
+    try {
+        // 先执行数据库迁移
+        console.log('执行数据库迁移...');
+        const migrateDatabase = await import('./migrate-database.js');
+        await migrateDatabase.default();
+        
+        // 启动服务器
+        app.listen(PORT, () => {
+            console.log(`Backend server is running on port ${PORT}!`);
+            console.log("Database: MySQL - 迁移完成");
+        });
+    } catch (error) {
+        console.error('服务器启动失败:', error);
+        process.exit(1);
+    }
+};
+
+startServer();
