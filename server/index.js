@@ -15,7 +15,6 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { db } from "./db.js";
-import initDatabase from "./init-database.js";
 
 dotenv.config();
 
