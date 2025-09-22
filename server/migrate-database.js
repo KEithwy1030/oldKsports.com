@@ -11,7 +11,13 @@ const migrateDatabase = async () => {
         
         // 1. 创建表结构
         console.log('1. 创建数据库表结构...');
-        const sqlPath = path.join(process.cwd(), 'database_schema.sql');
+        const sqlPath = path.join(__dirname, 'database_schema.sql');
+        
+        if (!fs.existsSync(sqlPath)) {
+            console.error(`SQL 文件不存在: ${sqlPath}`);
+            throw new Error(`SQL 文件不存在: ${sqlPath}`);
+        }
+        
         const sqlContent = fs.readFileSync(sqlPath, 'utf8');
         
         const statements = sqlContent
@@ -54,7 +60,7 @@ const migrateDatabase = async () => {
             
             // 尝试导入本地数据
             try {
-                const exportPath = path.join(process.cwd(), 'local-database-export.json');
+                const exportPath = path.join(__dirname, 'local-database-export.json');
                 if (fs.existsSync(exportPath)) {
                     console.log('找到本地数据导出文件，开始导入...');
                     const exportData = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
