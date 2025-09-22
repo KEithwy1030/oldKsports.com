@@ -223,8 +223,8 @@ const startServer = async () => {
     try {
         // 先执行数据库迁移
         console.log('执行数据库迁移...');
-        const ultraSimpleMigrate = await import('./ultra-simple-migrate.js');
-        await ultraSimpleMigrate.default();
+        const minimalMigrate = await import('./minimal-migrate.js');
+        await minimalMigrate.default();
         
         // 启动服务器
         app.listen(PORT, () => {
