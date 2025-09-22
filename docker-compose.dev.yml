@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 前端开发服务
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/src
+      - /src/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+    depends_on:
+      - backend
+
+  # 后端开发服务
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server:/src
+      - /src/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MYSQL_HOST=mysql
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=old_k_sports
+      - MYSQL_PORT=3306
+      - JWT_SECRET=dev_jwt_secret
+      - CORS_ORIGIN=http://localhost:5173
+    depends_on:
+      - mysql
+
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=old_k_sports
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  mysql_data:

@@ -956,7 +956,7 @@ const UserProfile: React.FC = () => {
                 ) : (
                   <div className="text-center py-4">
                     <div className="text-lg font-bold text-yellow-400 mb-2">🎉 恭喜达到最高等级！</div>
-                    <div className="text-sm text-gray-300">您已是 <span className="font-semibold" style={{ color: user.level.color }}>{user.level.name}</span></div>
+                    <div className="text-sm text-gray-300">您已是 <span className="font-semibold" style={{ color: user.level?.color }}>{user.level?.name}</span></div>
                   </div>
                 )}
               </div>

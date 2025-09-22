@@ -191,12 +191,14 @@ const Navigation: React.FC = () => {
                   >
                     <User className="w-4 h-4" />
                     <span className="text-sm">{user?.username}</span>
-                    <span 
-                      className="px-2 py-1 rounded-full text-xs font-medium"
-                      style={{ backgroundColor: `${user?.level.color}20`, color: user?.level.color }}
-                    >
-                      {user?.level.name}
-                    </span>
+                    {user?.level && (
+                      <span 
+                        className="px-2 py-1 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: `${user.level.color}20`, color: user.level.color }}
+                      >
+                        {user.level.name}
+                      </span>
+                    )}
                     {/* 通知数字 - 微信风格 */}
                     {notificationCounts.total > 0 && (
                       <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-lg">

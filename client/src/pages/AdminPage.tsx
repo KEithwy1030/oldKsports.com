@@ -443,7 +443,7 @@ const AdminPage: React.FC = () => {
                             <div className="text-emerald-400 font-medium">{user.points} 积分</div>
                             <span 
                               className="inline-block px-2 py-1 rounded-full text-xs font-medium mt-1"
-                              style={{ backgroundColor: `${user.level.color}20`, color: user.level.color }}
+                              style={{ backgroundColor: `${user.level?.color}20`, color: user.level?.color }}
                             >
                               {user.level.name}
                             </span>
@@ -604,7 +604,7 @@ const AdminPage: React.FC = () => {
                                 <div className="text-emerald-400 font-medium">{account.points} 积分</div>
                                 <span 
                                   className="inline-block px-2 py-1 rounded-full text-xs font-medium mt-1"
-                                  style={{ backgroundColor: `${account.level.color}20`, color: account.level.color }}
+                                  style={{ backgroundColor: `${account.level?.color}20`, color: account.level?.color }}
                                 >
                                   {account.level.name}
                                 </span>
