@@ -1,4 +1,4 @@
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 
 class NotificationService {
   // 创建回复通知
@@ -65,7 +65,7 @@ class NotificationService {
       const getUsersQuery = 'SELECT id FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
       
       return new Promise((resolve, reject) => {
-        db.query(getUsersQuery, async (err, users) => {
+        getDb().query(getUsersQuery, async (err, users) => {
           if (err) {
             console.error('获取用户列表失败:', err);
             return reject(err);
@@ -112,7 +112,7 @@ class NotificationService {
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
 
-      db.query(query, [recipientId, senderId, type, title, content, relatedPostId, relatedReplyId], (err, result) => {
+      getDb().query(query, [recipientId, senderId, type, title, content, relatedPostId, relatedReplyId], (err, result) => {
         if (err) {
           console.error('创建通知失败:', err);
           reject(err);
@@ -131,7 +131,7 @@ class NotificationService {
   static async checkUserExists(userId) {
     return new Promise((resolve, reject) => {
       const query = 'SELECT id FROM users WHERE id = ?';
-      db.query(query, [userId], (err, results) => {
+      getDb().query(query, [userId], (err, results) => {
         if (err) {
           reject(err);
         } else {
@@ -158,7 +158,7 @@ class NotificationService {
   static async getUserIdByUsername(username) {
     return new Promise((resolve, reject) => {
       const query = 'SELECT id FROM users WHERE username = ?';
-      db.query(query, [username], (err, results) => {
+      getDb().query(query, [username], (err, results) => {
         if (err) {
           reject(err);
         } else {

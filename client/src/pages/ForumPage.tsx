@@ -55,7 +55,7 @@ const ForumPage: React.FC = () => {
       let imageUrl = match[1];
       // 确保使用标准端口3001
       if (imageUrl.includes('localhost:5174')) {
-        imageUrl = imageUrl.replace('localhost:5174', import.meta.env.VITE_API_URL?.replace('/api', '') || 'localhost:3001');
+        imageUrl = imageUrl.replace('localhost:5174', import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001');
       }
       images.push(imageUrl);
     }
@@ -69,7 +69,7 @@ const ForumPage: React.FC = () => {
     let gridContent = match ? match[1] : '';
     // 确保使用标准端口3001
     if (gridContent.includes('localhost:5174')) {
-      gridContent = gridContent.replace(/localhost:5174/g, import.meta.env.VITE_API_URL?.replace('/api', '') || 'localhost:3001');
+      gridContent = gridContent.replace(/localhost:5174/g, import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001');
     }
     return gridContent;
   };

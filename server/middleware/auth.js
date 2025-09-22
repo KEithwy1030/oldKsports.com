@@ -1,6 +1,6 @@
 // server/middleware/auth.js
 import jwt from 'jsonwebtoken';
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -36,7 +36,7 @@ export const authenticateToken = async (req, res, next) => {
     
     // 从数据库获取用户信息
     const rows = await new Promise((resolve, reject) => {
-      db.query(
+      getDb().query(
         'SELECT id, username, email, points, is_admin FROM users WHERE id = ?',
         [decoded.userId],
         (err, results) => {

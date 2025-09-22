@@ -1,7 +1,7 @@
 // server/controllers/user.controller.js
 import jwt from 'jsonwebtoken';
 import { updateUserPoints as updateUserPointsService } from '../services/user.service.js';
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 
 const getUserInfoFromToken = (req) => {
     let token = req.cookies.access_token;
@@ -43,7 +43,7 @@ export const getUserAvatar = async (req, res) => {
         const { username } = req.params;
         
         const rows = await new Promise((resolve, reject) => {
-            db.query(
+            getDb().query(
                 'SELECT avatar FROM users WHERE username = ?',
                 [username],
                 (err, results) => {
@@ -99,7 +99,7 @@ export const updateUserProfile = async (req, res) => {
         const sql = `UPDATE users SET ${fieldsToUpdate.join(', ')} WHERE id = ?`;
         
         await new Promise((resolve, reject) => {
-            db.query(sql, values, (err, result) => {
+            getDb().query(sql, values, (err, result) => {
                 if (err) reject(err);
                 else resolve(result);
             });
@@ -107,7 +107,7 @@ export const updateUserProfile = async (req, res) => {
         
         // 获取更新后的用户信息
         const updatedUser = await new Promise((resolve, reject) => {
-            db.query(
+            getDb().query(
                 'SELECT id, username, email, points, avatar, has_uploaded_avatar, created_at FROM users WHERE id = ?',
                 [userId],
                 (err, results) => {
@@ -140,7 +140,7 @@ export const getUserInfo = async (req, res) => {
     try {
         const { username } = req.params;
         const rows = await new Promise((resolve, reject) => {
-            db.query(
+            getDb().query(
                 'SELECT id, username, email, points, avatar, has_uploaded_avatar, created_at FROM users WHERE username = ?',
                 [username],
                 (err, results) => {

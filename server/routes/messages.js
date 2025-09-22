@@ -1,5 +1,5 @@
 import express from 'express';
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -37,7 +37,7 @@ router.get('/users', authenticateToken, async (req, res) => {
       ORDER BY last_message_time DESC
     `;
     
-    db.query(query, [userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId], (err, results) => {
+    getDb().query(query, [userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId], (err, results) => {
       if (err) {
         console.error('获取聊天用户列表失败:', err);
         return res.status(500).json({ success: false, error: '获取用户列表失败' });
@@ -72,7 +72,7 @@ router.get('/conversation/:userId', authenticateToken, async (req, res) => {
       ORDER BY m.created_at ASC
     `;
     
-    db.query(query, [currentUserId, otherUserId, otherUserId, currentUserId], (err, results) => {
+    getDb().query(query, [currentUserId, otherUserId, otherUserId, currentUserId], (err, results) => {
       if (err) {
         console.error('获取对话消息失败:', err);
         return res.status(500).json({ success: false, error: '获取消息失败' });
@@ -101,7 +101,7 @@ router.post('/', authenticateToken, async (req, res) => {
     
     // 验证接收者存在
     const checkUserQuery = 'SELECT id FROM users WHERE id = ?';
-    db.query(checkUserQuery, [recipient_id], (err, userResults) => {
+    getDb().query(checkUserQuery, [recipient_id], (err, userResults) => {
       if (err) {
         console.error('验证用户失败:', err);
         return res.status(500).json({ success: false, error: '验证用户失败' });
@@ -117,7 +117,7 @@ router.post('/', authenticateToken, async (req, res) => {
         VALUES (?, ?, ?)
       `;
       
-      db.query(insertQuery, [senderId, recipient_id, content.trim()], (err, result) => {
+      getDb().query(insertQuery, [senderId, recipient_id, content.trim()], (err, result) => {
         if (err) {
           console.error('发送消息失败:', err);
           return res.status(500).json({ success: false, error: '发送消息失败' });
@@ -148,7 +148,7 @@ router.put('/mark-read/:userId', authenticateToken, async (req, res) => {
       WHERE sender_id = ? AND recipient_id = ? AND is_read = FALSE
     `;
     
-    db.query(query, [otherUserId, currentUserId], (err, result) => {
+    getDb().query(query, [otherUserId, currentUserId], (err, result) => {
       if (err) {
         console.error('标记消息已读失败:', err);
         return res.status(500).json({ success: false, error: '标记失败' });
@@ -178,7 +178,7 @@ router.put('/mark-all-read', authenticateToken, async (req, res) => {
       WHERE recipient_id = ? AND is_read = FALSE
     `;
     
-    db.query(query, [currentUserId], (err, result) => {
+    getDb().query(query, [currentUserId], (err, result) => {
       if (err) {
         console.error('标记所有消息已读失败:', err);
         return res.status(500).json({ success: false, error: '标记失败' });

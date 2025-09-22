@@ -1,5 +1,5 @@
 import express from 'express';
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -20,7 +20,7 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
       WHERE recipient_id = ? AND is_read = FALSE
     `;
     
-    db.query(query, [userId], (err, results) => {
+    getDb().query(query, [userId], (err, results) => {
       if (err) {
         console.error('获取未读通知数量失败:', err);
         return res.status(500).json({ success: false, error: '获取通知失败' });
@@ -75,7 +75,7 @@ router.get('/list', authenticateToken, async (req, res) => {
     
     queryParams.push(parseInt(limit), parseInt(offset));
     
-    db.query(query, queryParams, (err, results) => {
+    getDb().query(query, queryParams, (err, results) => {
       if (err) {
         console.error('获取通知列表失败:', err);
         return res.status(500).json({ success: false, error: '获取通知失败' });
@@ -121,7 +121,7 @@ router.put('/mark-read', authenticateToken, async (req, res) => {
       queryParams = [userId];
     }
     
-    db.query(query, queryParams, (err, result) => {
+    getDb().query(query, queryParams, (err, result) => {
       if (err) {
         console.error('标记通知已读失败:', err);
         return res.status(500).json({ success: false, error: '标记失败' });
@@ -154,7 +154,7 @@ router.post('/create', authenticateToken, async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     
-    db.query(query, [recipientId, senderId, type, title, content, relatedPostId, relatedReplyId], (err, result) => {
+    getDb().query(query, [recipientId, senderId, type, title, content, relatedPostId, relatedReplyId], (err, result) => {
       if (err) {
         console.error('创建通知失败:', err);
         return res.status(500).json({ success: false, error: '创建通知失败' });
@@ -180,7 +180,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     
     const query = 'DELETE FROM notifications WHERE id = ? AND recipient_id = ?';
     
-    db.query(query, [notificationId, userId], (err, result) => {
+    getDb().query(query, [notificationId, userId], (err, result) => {
       if (err) {
         console.error('删除通知失败:', err);
         return res.status(500).json({ success: false, error: '删除失败' });

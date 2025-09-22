@@ -1,11 +1,11 @@
 // server/services/userStats.service.js
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 
 class UserStatsService {
   // 增加用户发帖数
   async incrementUserPosts(userId) {
     try {
-      await db.execute(
+      await getDb().execute(
         'UPDATE users SET total_posts = total_posts + 1 WHERE id = ?',
         [userId]
       );
@@ -19,7 +19,7 @@ class UserStatsService {
   // 增加用户回复数
   async incrementUserReplies(userId) {
     try {
-      await db.execute(
+      await getDb().execute(
         'UPDATE users SET total_replies = total_replies + 1 WHERE id = ?',
         [userId]
       );
@@ -37,7 +37,7 @@ class UserStatsService {
       
       // 获取用户当前签到信息
       const userRows = await new Promise((resolve, reject) => {
-        db.execute(
+        getDb().execute(
           'SELECT consecutive_checkins, last_checkin_date FROM users WHERE id = ?',
           [userId],
           (err, results) => {
@@ -66,7 +66,7 @@ class UserStatsService {
       }
       
       // 更新签到信息
-      await db.execute(
+      await getDb().execute(
         'UPDATE users SET consecutive_checkins = ?, last_checkin_date = ? WHERE id = ?',
         [newConsecutiveCheckins, today, userId]
       );
@@ -83,7 +83,7 @@ class UserStatsService {
   async getUserStats(userId) {
     try {
       const rows = await new Promise((resolve, reject) => {
-        db.execute(
+        getDb().execute(
           'SELECT total_posts, total_replies, consecutive_checkins, last_checkin_date FROM users WHERE id = ?',
           [userId],
           (err, results) => {
@@ -119,7 +119,7 @@ class UserStatsService {
   async getAllUsersStats() {
     try {
       const rows = await new Promise((resolve, reject) => {
-        db.execute(
+        getDb().execute(
           'SELECT id, username, total_posts, total_replies, consecutive_checkins FROM users ORDER BY total_posts DESC',
           (err, results) => {
             if (err) reject(err);

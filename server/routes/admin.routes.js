@@ -1,7 +1,7 @@
 // server/routes/admin.routes.js
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -23,7 +23,7 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
   try {
     // 获取总用户数
     const totalUsersResult = await new Promise((resolve, reject) => {
-      db.query('SELECT COUNT(*) as count FROM users', (err, results) => {
+      getDb().query('SELECT COUNT(*) as count FROM users', (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -31,7 +31,7 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
 
     // 获取总帖子数
     const totalPostsResult = await new Promise((resolve, reject) => {
-      db.query('SELECT COUNT(*) as count FROM posts', (err, results) => {
+      getDb().query('SELECT COUNT(*) as count FROM posts', (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -39,7 +39,7 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
 
     // 获取总回复数
     const totalRepliesResult = await new Promise((resolve, reject) => {
-      db.query('SELECT COUNT(*) as count FROM replies', (err, results) => {
+      getDb().query('SELECT COUNT(*) as count FROM replies', (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -47,7 +47,7 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
 
     // 获取今日新增用户数
     const todayUsersResult = await new Promise((resolve, reject) => {
-      db.query(
+      getDb().query(
         'SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = CURDATE()',
         (err, results) => {
           if (err) reject(err);
@@ -58,7 +58,7 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
 
     // 获取今日新增帖子数
     const todayPostsResult = await new Promise((resolve, reject) => {
-      db.query(
+      getDb().query(
         'SELECT COUNT(*) as count FROM posts WHERE DATE(created_at) = CURDATE()',
         (err, results) => {
           if (err) reject(err);
@@ -69,7 +69,7 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
 
     // 获取今日新增回复数
     const todayRepliesResult = await new Promise((resolve, reject) => {
-      db.query(
+      getDb().query(
         'SELECT COUNT(*) as count FROM replies WHERE DATE(created_at) = CURDATE()',
         (err, results) => {
           if (err) reject(err);
@@ -80,7 +80,7 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
 
     // 获取最近7天用户增长数据
     const userGrowthResult = await new Promise((resolve, reject) => {
-      db.query(`
+      getDb().query(`
         SELECT DATE(created_at) as date, COUNT(*) as count 
         FROM users 
         WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
@@ -94,7 +94,7 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
 
     // 获取最近7天帖子增长数据
     const postGrowthResult = await new Promise((resolve, reject) => {
-      db.query(`
+      getDb().query(`
         SELECT DATE(created_at) as date, COUNT(*) as count 
         FROM posts 
         WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
@@ -137,7 +137,7 @@ router.get('/dashboard/activity', authenticateToken, requireAdmin, async (req, r
   try {
     // 获取最近帖子
     const recentPosts = await new Promise((resolve, reject) => {
-      db.query(`
+      getDb().query(`
         SELECT p.id, p.title, p.created_at, u.username
         FROM posts p
         JOIN users u ON p.user_id = u.id
@@ -151,7 +151,7 @@ router.get('/dashboard/activity', authenticateToken, requireAdmin, async (req, r
 
     // 获取最近回复
     const recentReplies = await new Promise((resolve, reject) => {
-      db.query(`
+      getDb().query(`
         SELECT r.id, r.content, r.created_at, u.username, p.title as post_title
         FROM replies r
         JOIN users u ON r.user_id = u.id
@@ -166,7 +166,7 @@ router.get('/dashboard/activity', authenticateToken, requireAdmin, async (req, r
 
     // 获取最近注册用户
     const recentUsers = await new Promise((resolve, reject) => {
-      db.query(`
+      getDb().query(`
         SELECT id, username, email, created_at
         FROM users
         ORDER BY created_at DESC
@@ -242,7 +242,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
     queryParams.push(parseInt(limit), parseInt(offset));
 
     const users = await new Promise((resolve, reject) => {
-      db.query(query, queryParams, (err, results) => {
+      getDb().query(query, queryParams, (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -258,7 +258,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     const totalResult = await new Promise((resolve, reject) => {
-      db.query(countQuery, countParams, (err, results) => {
+      getDb().query(countQuery, countParams, (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -312,7 +312,7 @@ router.get('/posts', authenticateToken, requireAdmin, async (req, res) => {
     queryParams.push(parseInt(limit), parseInt(offset));
 
     const posts = await new Promise((resolve, reject) => {
-      db.query(query, queryParams, (err, results) => {
+      getDb().query(query, queryParams, (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -328,7 +328,7 @@ router.get('/posts', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     const totalResult = await new Promise((resolve, reject) => {
-      db.query(countQuery, countParams, (err, results) => {
+      getDb().query(countQuery, countParams, (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -363,7 +363,7 @@ router.delete('/posts/:id', authenticateToken, requireAdmin, async (req, res) =>
 
     // 先删除相关回复
     await new Promise((resolve, reject) => {
-      db.query('DELETE FROM replies WHERE post_id = ?', [id], (err, results) => {
+      getDb().query('DELETE FROM replies WHERE post_id = ?', [id], (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -371,7 +371,7 @@ router.delete('/posts/:id', authenticateToken, requireAdmin, async (req, res) =>
 
     // 删除帖子
     const result = await new Promise((resolve, reject) => {
-      db.query('DELETE FROM posts WHERE id = ?', [id], (err, results) => {
+      getDb().query('DELETE FROM posts WHERE id = ?', [id], (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -405,7 +405,7 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
 
     // 检查是否是管理员
     const userResult = await new Promise((resolve, reject) => {
-      db.query('SELECT is_admin FROM users WHERE id = ?', [id], (err, results) => {
+      getDb().query('SELECT is_admin FROM users WHERE id = ?', [id], (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -427,14 +427,14 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
 
     // 删除用户相关数据
     await new Promise((resolve, reject) => {
-      db.query('DELETE FROM replies WHERE user_id = ?', [id], (err, results) => {
+      getDb().query('DELETE FROM replies WHERE user_id = ?', [id], (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
     });
 
     await new Promise((resolve, reject) => {
-      db.query('DELETE FROM posts WHERE user_id = ?', [id], (err, results) => {
+      getDb().query('DELETE FROM posts WHERE user_id = ?', [id], (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -442,7 +442,7 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
 
     // 删除用户
     const result = await new Promise((resolve, reject) => {
-      db.query('DELETE FROM users WHERE id = ?', [id], (err, results) => {
+      getDb().query('DELETE FROM users WHERE id = ?', [id], (err, results) => {
         if (err) reject(err);
         else resolve(results);
       });
@@ -490,7 +490,7 @@ router.get('/system/status', authenticateToken, requireAdmin, async (req, res) =
     // 检查数据库连接
     const checkDatabaseConnection = () => {
       return new Promise((resolve) => {
-        db.query('SELECT 1', (err) => {
+        getDb().query('SELECT 1', (err) => {
           resolve({
             status: err ? 'error' : 'normal',
             message: err ? 'Database connection failed' : 'Database connected'
