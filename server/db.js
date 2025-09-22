@@ -4,6 +4,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// 调试：打印环境变量
+console.log('Database connection environment variables:');
+console.log('MYSQL_HOST:', process.env.MYSQL_HOST);
+console.log('MYSQL_USERNAME:', process.env.MYSQL_USERNAME);
+console.log('MYSQL_PASSWORD:', process.env.MYSQL_PASSWORD ? '***' : 'undefined');
+console.log('MYSQL_DATABASE:', process.env.MYSQL_DATABASE);
+console.log('MYSQL_PORT:', process.env.MYSQL_PORT);
+
 // 这段代码会优先使用 Zeabur 自动注入的环境变量。
 // 如果在本地，它会使用你 .env 文件里的配置。
 const connectionConfig = {
