@@ -1,5 +1,6 @@
 // 商家管理路由
 import express from 'express';
+import { getDb } from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -44,12 +45,19 @@ const mockMerchants = [
 // 获取所有商家（公开接口）
 router.get('/', async (req, res) => {
   try {
-    // 只返回活跃状态的商家
-    const activeMerchants = mockMerchants.filter(merchant => merchant.status === 'active');
+    const merchants = await new Promise((resolve, reject) => {
+      getDb().query(
+        'SELECT id, name, description, category, contact_info, website, logo_url, rating, created_at FROM merchants WHERE status = "active" ORDER BY created_at DESC',
+        (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        }
+      );
+    });
     
     res.json({
       success: true,
-      data: activeMerchants
+      data: merchants
     });
   } catch (error) {
     console.error('获取商家列表失败:', error);

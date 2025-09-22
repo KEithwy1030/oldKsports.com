@@ -140,7 +140,6 @@ app.use('/uploads/images', express.static(staticPath));
 app.use('/uploads', express.static(staticPath));
 
 app.use("/api/auth", authRoutes);
-app.use("/auth", authRoutes); // 添加不带 /api 前缀的路由别名
 app.use("/api/posts", postRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/user-stats", userStatsRoutes);
@@ -193,32 +192,6 @@ app.delete("/api/admin/posts/clear", authenticateToken, async (req, res) => {
   }
 });
 
-// 公开的商家API端点（不需要管理员权限）
-app.get("/api/merchants", async (req, res) => {
-  try {
-    // 只返回激活状态的商家
-    const merchants = await new Promise((resolve, reject) => {
-      db.query(
-        'SELECT id, name, description, category, contact_info, website, logo_url, rating, created_at FROM merchants WHERE status = "active" ORDER BY created_at DESC',
-        (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        }
-      );
-    });
-
-    res.json({
-      success: true,
-      data: merchants
-    });
-  } catch (error) {
-    console.error('获取公开商家列表失败:', error);
-    res.status(500).json({
-      success: false,
-      error: '获取商家列表失败'
-    });
-  }
-});
 
 // 启动服务器
 const startServer = async () => {

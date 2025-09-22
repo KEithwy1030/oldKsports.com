@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import PostImageGrid from './PostImageGrid';
 import '../styles/weiboImageGrid.css';
 
@@ -65,11 +66,17 @@ const PostContent: React.FC<PostContentProps> = ({ content, className = '' }) =>
           return <PostImageGrid key={index} images={images} />;
         }
         
-        // 渲染文本内容
+        // 渲染文本内容 - 使用DOMPurify清洗HTML防止XSS
+        const sanitizedHtml = DOMPurify.sanitize(part, {
+          ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'img'],
+          ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style'],
+          ALLOW_DATA_ATTR: false
+        });
+        
         return (
           <div 
             key={index}
-            dangerouslySetInnerHTML={{ __html: part }}
+            dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
             className="whitespace-pre-wrap"
           />
         );

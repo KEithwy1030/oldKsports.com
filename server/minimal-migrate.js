@@ -8,7 +8,7 @@ const minimalMigrate = async () => {
         // 获取数据库连接
         const db = getDb();
         
-        // 只创建用户表，不做任何数据操作
+        // 创建用户表
         console.log('创建用户表...');
         const createUsersTable = `
             CREATE TABLE IF NOT EXISTS users (
@@ -38,6 +38,36 @@ const minimalMigrate = async () => {
                     reject(err);
                 } else {
                     console.log('✅ 用户表创建成功');
+                    resolve(result);
+                }
+            });
+        });
+
+        // 创建商家表
+        console.log('创建商家表...');
+        const createMerchantsTable = `
+            CREATE TABLE IF NOT EXISTS merchants (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                category VARCHAR(50) NOT NULL,
+                contact_info VARCHAR(255),
+                website VARCHAR(255),
+                logo_url VARCHAR(255),
+                rating DECIMAL(3,2) DEFAULT 0.00,
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `;
+        
+        await new Promise((resolve, reject) => {
+            db.query(createMerchantsTable, (err, result) => {
+                if (err) {
+                    console.error('创建商家表失败:', err);
+                    reject(err);
+                } else {
+                    console.log('✅ 商家表创建成功');
                     resolve(result);
                 }
             });
