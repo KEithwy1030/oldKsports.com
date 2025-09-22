@@ -288,7 +288,7 @@ const UserProfile: React.FC = () => {
         let shouldGivePoints = false;
         try {
           // 直接查询数据库获取准确的has_uploaded_avatar状态
-          const response = await fetch(`http://localhost:3001/api/users/${user.username}/info`);
+          const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/users/${user.username}/info`);
           const dbData = await response.json();
           
           if (dbData.success && dbData.user) {

@@ -1,9 +1,12 @@
 // 最小化迁移脚本 - 只创建必要的表，不处理用户数据
-import { db } from './db.js';
+import { getDb } from './db.js';
 
 const minimalMigrate = async () => {
     try {
         console.log('开始最小化数据库迁移...');
+        
+        // 获取数据库连接
+        const db = getDb();
         
         // 只创建用户表，不做任何数据操作
         console.log('创建用户表...');

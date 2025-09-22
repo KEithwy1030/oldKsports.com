@@ -99,7 +99,7 @@ class AuthService {
       const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
 
       // For development/testing, skip database update and return reset link directly
-      const resetLink = `http://localhost:3001/reset-password/${resetToken}`;
+      const resetLink = `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'}/reset-password/${resetToken}`;
 
       return createSuccessResponse({
         message: '重置密码链接已发送到您的邮箱',

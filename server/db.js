@@ -26,14 +26,26 @@ const connectionConfig = {
   port: parseInt(process.env.MYSQL_PORT || '3306', 10) // 确保端口是数字类型
 };
 
-export const db = mysql.createConnection(connectionConfig);
+// 延迟创建连接，确保环境变量已加载
+let db = null;
 
-// 添加更健壮的连接测试和错误处理逻辑
-db.connect(error => {
-  if (error) {
-    console.error('FATAL: Error connecting to the database:', error);
-    // 在生产环境中，如果数据库连接失败，应该让程序崩溃退出，以便服务自动重启
-    process.exit(1); 
+export const getDb = () => {
+  if (!db) {
+    console.log('Creating database connection...');
+    db = mysql.createConnection(connectionConfig);
+    
+    // 添加更健壮的连接测试和错误处理逻辑
+    db.connect(error => {
+      if (error) {
+        console.error('FATAL: Error connecting to the database:', error);
+        // 在生产环境中，如果数据库连接失败，应该让程序崩溃退出，以便服务自动重启
+        process.exit(1); 
+      }
+      console.log('Successfully connected to the database.');
+    });
   }
-  console.log('Successfully connected to the database.');
-});
+  return db;
+};
+
+// 为了向后兼容，也导出db
+export { getDb as db };

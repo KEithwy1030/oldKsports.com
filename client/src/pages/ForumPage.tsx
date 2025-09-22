@@ -55,7 +55,7 @@ const ForumPage: React.FC = () => {
       let imageUrl = match[1];
       // 确保使用标准端口3001
       if (imageUrl.includes('localhost:5174')) {
-        imageUrl = imageUrl.replace('localhost:5174', 'localhost:3001');
+        imageUrl = imageUrl.replace('localhost:5174', import.meta.env.VITE_API_URL?.replace('/api', '') || 'localhost:3001');
       }
       images.push(imageUrl);
     }
@@ -69,7 +69,7 @@ const ForumPage: React.FC = () => {
     let gridContent = match ? match[1] : '';
     // 确保使用标准端口3001
     if (gridContent.includes('localhost:5174')) {
-      gridContent = gridContent.replace(/localhost:5174/g, 'localhost:3001');
+      gridContent = gridContent.replace(/localhost:5174/g, import.meta.env.VITE_API_URL?.replace('/api', '') || 'localhost:3001');
     }
     return gridContent;
   };
@@ -308,7 +308,7 @@ const ForumPage: React.FC = () => {
         const imageHtml = `
           <div class="post-images-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 16px 0;">
             ${newPostImages.map((imagePath, index) => 
-              `<img src="http://localhost:3001${imagePath}" alt="帖子图片 ${index + 1}" style="width: 100%; height: auto; border-radius: 8px; object-fit: contain;" class="post-image" />`
+              `<img src="${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'}${imagePath}" alt="帖子图片 ${index + 1}" style="width: 100%; height: auto; border-radius: 8px; object-fit: contain;" class="post-image" />`
             ).join('')}
           </div>
         `;
@@ -501,7 +501,7 @@ const ForumPage: React.FC = () => {
                                 });
 
                                 // 上传文件到服务器
-                                const response = await fetch('http://localhost:3001/api/upload/images', {
+                                const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/upload/images`, {
                                   method: 'POST',
                                   body: formData,
                                 });
@@ -540,7 +540,7 @@ const ForumPage: React.FC = () => {
                           {newPostImages.map((imagePath, index) => (
                             <div key={index} className="relative">
                               <img
-                                src={`http://localhost:3001${imagePath}`}
+                                src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'}${imagePath}`}
                                 alt={`上传的图片 ${index + 1}`}
                                 className="w-full h-16 object-cover rounded-md border border-white/20"
                               />

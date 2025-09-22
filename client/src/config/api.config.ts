@@ -3,24 +3,24 @@ export const API_CONFIG = {
   // 后端基础URL（生产环境使用环境变量，开发环境使用代理）
   BASE_URL: import.meta.env.VITE_API_URL || '/api',
   
-  // API端点
+  // API端点（不带/api前缀，因为BASE_URL已经包含）
   ENDPOINTS: {
     AUTH: {
-      LOGIN: '/api/auth/login',
-      REGISTER: '/api/auth/register',
-      LOGOUT: '/api/auth/logout'
+      LOGIN: '/auth/login',
+      REGISTER: '/auth/register',
+      LOGOUT: '/auth/logout'
     },
     USERS: {
-      ME: '/api/users/me',
-      UPDATE: '/api/users/me',
-      POSTS: '/api/users/:userId/posts'
+      ME: '/users/me',
+      UPDATE: '/users/me',
+      POSTS: '/users/:userId/posts'
     },
     FORUM: {
-      POSTS: '/api/forum/posts',
-      CREATE_POST: '/api/forum/posts'
+      POSTS: '/forum/posts',
+      CREATE_POST: '/forum/posts'
     },
-    HEALTH: '/api/health',
-    DATABASE: '/api/database'
+    HEALTH: '/health',
+    DATABASE: '/database'
   },
   
   // 请求配置

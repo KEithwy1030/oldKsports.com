@@ -15,7 +15,7 @@ import dotenv from "dotenv";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { db } from "./db.js";
+import { getDb } from "./db.js";
 
 dotenv.config();
 
@@ -223,6 +223,9 @@ app.get("/api/merchants", async (req, res) => {
 // 启动服务器
 const startServer = async () => {
     try {
+        // 初始化数据库连接
+        const db = getDb();
+        
         // 先执行数据库迁移
         console.log('执行数据库迁移...');
         const minimalMigrate = await import('./minimal-migrate.js');
@@ -231,7 +234,7 @@ const startServer = async () => {
         // 启动服务器
         app.listen(PORT, () => {
             console.log(`Backend server is running on port ${PORT}!`);
-            console.log("Database: MySQL - 迁移完成");
+            console.log("Database: MySQL - 连接成功，迁移完成");
         });
     } catch (error) {
         console.error('服务器启动失败:', error);

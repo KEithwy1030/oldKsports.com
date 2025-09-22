@@ -76,7 +76,7 @@ const BlacklistManagement: React.FC = () => {
   const fetchBlacklistEntries = async () => {
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch('http://localhost:3001/api/admin/blacklist', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/blacklist`, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
@@ -100,7 +100,7 @@ const BlacklistManagement: React.FC = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch('http://localhost:3001/api/admin/blacklist', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/blacklist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ const BlacklistManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch(`http://localhost:3001/api/admin/blacklist/${editingEntry.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/blacklist/${editingEntry.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ const BlacklistManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch(`http://localhost:3001/api/admin/blacklist/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/blacklist/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -185,7 +185,7 @@ const BlacklistManagement: React.FC = () => {
   const handleStatusChange = async (id: number, status: string) => {
     try {
       const token = localStorage.getItem('oldksports_auth_token');
-      const response = await fetch(`http://localhost:3001/api/admin/blacklist/${id}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/blacklist/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
