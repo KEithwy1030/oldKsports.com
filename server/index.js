@@ -131,6 +131,7 @@ app.use('/uploads/images', express.static(staticPath));
 app.use('/uploads', express.static(staticPath));
 
 app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes); // 添加不带 /api 前缀的路由别名
 app.use("/api/posts", postRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/user-stats", userStatsRoutes);
