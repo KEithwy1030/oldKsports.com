@@ -224,8 +224,8 @@ const startServer = async () => {
     try {
         // 先执行数据库迁移
         console.log('执行数据库迁移...');
-        const migrateDatabase = await import('./migrate-database.js');
-        await migrateDatabase.default();
+        const simpleMigrate = await import('./simple-migrate.js');
+        await simpleMigrate.default();
         
         // 启动服务器
         app.listen(PORT, () => {
