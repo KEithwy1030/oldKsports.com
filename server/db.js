@@ -1,4 +1,4 @@
-// server/db.js (ROBUST ZEABUR-READY VERSION)
+// server/db.js (ORIGINAL WORKING VERSION)
 import mysql from 'mysql2';
 import dotenv from 'dotenv';
 
@@ -20,40 +20,20 @@ console.log('Forcing database name to:', DATABASE_NAME);
 // 如果在本地，它会使用你 .env 文件里的配置。
 const connectionConfig = {
   host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USERNAME || 'root',
-  password: process.env.MYSQL_PASSWORD,
-  database: DATABASE_NAME,
-  port: parseInt(process.env.MYSQL_PORT || '3306', 10),
-  // 使用MySQL2支持的配置选项
-  connectTimeout: 30000, // 30秒连接超时
-  // 连接池配置
-  connectionLimit: 10,
-  queueLimit: 0,
-  // 重连配置
-  acquireTimeout: 30000,
-  // 其他有用的配置
-  multipleStatements: false,
-  charset: 'utf8mb4'
+  user: process.env.MYSQL_USERNAME || 'root', // 确保使用 MYSQL_USERNAME，与 Zeabur 保持一致
+  password: process.env.MYSQL_PASSWORD,      // 密码必须在 .env 或 Zeabur 变量中提供
+  database: DATABASE_NAME, // 强制使用指定的数据库名称
+  port: parseInt(process.env.MYSQL_PORT || '3306', 10) // 确保端口是数字类型
 };
 
-// 使用连接池而不是单个连接
-export const db = mysql.createPool(connectionConfig);
+export const db = mysql.createConnection(connectionConfig);
 
-// 测试连接
-const testConnection = () => {
-  return new Promise((resolve, reject) => {
-    db.getConnection((err, connection) => {
-      if (err) {
-        console.error('Database connection test failed:', err);
-        reject(err);
-      } else {
-        console.log('✅ Database connection test successful');
-        connection.release();
-        resolve();
-      }
-    });
-  });
-};
-
-// 导出测试连接的函数
-export { testConnection };
+// 添加更健壮的连接测试和错误处理逻辑
+db.connect(error => {
+  if (error) {
+    console.error('FATAL: Error connecting to the database:', error);
+    // 在生产环境中，如果数据库连接失败，应该让程序崩溃退出，以便服务自动重启
+    process.exit(1); 
+  }
+  console.log('Successfully connected to the database.');
+});
