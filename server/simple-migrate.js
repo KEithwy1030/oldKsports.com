@@ -164,14 +164,14 @@ const simpleMigrate = async () => {
             console.log('创建默认管理员账号...');
             const bcrypt = await import('bcryptjs');
             const salt = bcrypt.genSaltSync(10);
-            const hashedPassword = bcrypt.hashSync('k19941030', salt);
+            const hashedPassword = bcrypt.hashSync('Kk19941030', salt);
             
             await new Promise((resolve, reject) => {
                 const insertAdmin = `
                     INSERT INTO users (username, email, password, is_admin, points, created_at) 
                     VALUES (?, ?, ?, ?, ?, NOW())
                 `;
-                db.query(insertAdmin, ['老k', 'KEithwy1030@2925.com', hashedPassword, true, 1000], (err, result) => {
+                db.query(insertAdmin, ['老k', '552319164@qq.com', hashedPassword, true, 210], (err, result) => {
                     if (err) {
                         console.error('创建管理员账号失败:', err);
                         reject(err);
