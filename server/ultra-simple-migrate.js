@@ -44,7 +44,7 @@ const ultraSimpleMigrate = async () => {
         // 2. 检查管理员账号是否存在
         console.log('检查管理员账号...');
         const existingAdmin = await new Promise((resolve, reject) => {
-            db.query('SELECT id FROM users WHERE email = ?', ['552319164@qq.com'], (err, result) => {
+            db.query('SELECT id, username, email, is_admin FROM users WHERE email = ? OR username = ?', ['552319164@qq.com', '老k'], (err, result) => {
                 if (err) reject(err);
                 else resolve(result);
             });
@@ -74,7 +74,28 @@ const ultraSimpleMigrate = async () => {
                 });
             });
         } else {
+            const admin = existingAdmin[0];
             console.log('✅ 管理员账号已存在');
+            console.log(`   ID: ${admin.id}`);
+            console.log(`   用户名: ${admin.username}`);
+            console.log(`   邮箱: ${admin.email}`);
+            console.log(`   管理员权限: ${admin.is_admin ? '是' : '否'}`);
+            
+            // 确保管理员权限正确
+            if (!admin.is_admin) {
+                console.log('更新管理员权限...');
+                await new Promise((resolve, reject) => {
+                    db.query('UPDATE users SET is_admin = TRUE, points = ? WHERE id = ?', [210, admin.id], (err, result) => {
+                        if (err) {
+                            console.error('更新管理员权限失败:', err);
+                            reject(err);
+                        } else {
+                            console.log('✅ 管理员权限已更新');
+                            resolve(result);
+                        }
+                    });
+                });
+            }
         }
         
         console.log('✅ 超简单数据库迁移完成！');
