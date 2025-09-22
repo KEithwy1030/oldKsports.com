@@ -10,6 +10,7 @@ dotenv.config();
 
 export const register = async (req, res) => {
     try {
+        console.log('Register request received:', { username: req.body.username, email: req.body.email });
         const { username, email, password } = req.body;
         
         // Validate required fields
@@ -69,9 +70,11 @@ export const register = async (req, res) => {
         });
     } catch (err) {
         console.error('Registration error:', err);
+        console.error('Registration error stack:', err.stack);
         return res.status(500).json({ 
             success: false, 
-            message: "注册失败，请稍后重试" 
+            message: "注册失败，请稍后重试",
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
     }
 };
