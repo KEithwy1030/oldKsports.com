@@ -36,12 +36,12 @@
         "NODE_ENV": "production",
         "PORT": "8080",
         "CORS_ORIGIN": "https://oldksports.zeabur.app",
-        "MYSQL_HOST": "mysql.zeabur.internal",
+        "MYSQL_HOST": "service-68d15b2c030e2df4a569eaa5.zeabur.internal",
         "MYSQL_PORT": "3306",
         "MYSQL_USERNAME": "root",
-        "MYSQL_PASSWORD": "",
-        "MYSQL_DATABASE": "old_k_sports",
-        "JWT_SECRET": ""
+        "MYSQL_PASSWORD": "${MYSQL_ROOT_PASSWORD}",
+        "MYSQL_DATABASE": "${MYSQL_DATABASE}",
+        "JWT_SECRET": "OldKSports_Production_JWT_Secret_2024_Zeabur_Deployment"
       }
     }
   ]
