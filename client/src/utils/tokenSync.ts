@@ -41,7 +41,8 @@ export const tokenSync = {
   // 验证令牌是否有效
   validateToken: async (token: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/admin/check', {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/admin/check`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

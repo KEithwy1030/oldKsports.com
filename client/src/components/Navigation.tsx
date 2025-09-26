@@ -50,7 +50,8 @@ const Navigation: React.FC = () => {
     if (!user || !isAuthenticated) return;
     
     try {
-      const response = await fetch('/api/notifications/unread-count', {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/notifications/unread-count`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('oldksports_auth_token')}`
         }
@@ -96,7 +97,8 @@ const Navigation: React.FC = () => {
     if (!user) return;
     
     try {
-      const response = await fetch('/api/notifications/mark-read', {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/notifications/mark-read`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

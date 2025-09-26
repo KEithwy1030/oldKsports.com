@@ -81,7 +81,8 @@ const ChatWidget: React.FC = () => {
   // 标记所有消息为已读
   const markAllMessagesAsRead = useCallback(async () => {
     try {
-      const response = await fetch('/api/messages/mark-all-read', {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/messages/mark-all-read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('oldksports_auth_token')}`
@@ -125,7 +126,8 @@ const ChatWidget: React.FC = () => {
     if (!user) return;
     
     try {
-      const response = await fetch('/api/messages/users', {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/messages/users`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('oldksports_auth_token')}`
         }
@@ -192,7 +194,8 @@ const ChatWidget: React.FC = () => {
     const messageToSend = newMessage; // 保存消息内容
     
     try {
-      const response = await fetch('/api/messages', {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

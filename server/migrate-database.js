@@ -75,15 +75,16 @@ const migrateDatabase = async () => {
                 FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
             )`,
-            `CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`,
-            `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
-            `CREATE INDEX IF NOT EXISTS idx_forum_posts_author ON forum_posts(author_id)`,
-            `CREATE INDEX IF NOT EXISTS idx_forum_posts_category ON forum_posts(category)`,
-            `CREATE INDEX IF NOT EXISTS idx_forum_replies_post ON forum_replies(post_id)`,
-            `CREATE INDEX IF NOT EXISTS idx_forum_replies_author ON forum_replies(author_id)`,
-            `CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id)`,
-            `CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id)`,
-            `CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id)`
+            // 创建索引 - 使用兼容性更好的语法
+            `CREATE INDEX idx_users_username ON users(username)`,
+            `CREATE INDEX idx_users_email ON users(email)`,
+            `CREATE INDEX idx_forum_posts_author ON forum_posts(author_id)`,
+            `CREATE INDEX idx_forum_posts_category ON forum_posts(category)`,
+            `CREATE INDEX idx_forum_replies_post ON forum_replies(post_id)`,
+            `CREATE INDEX idx_forum_replies_author ON forum_replies(author_id)`,
+            `CREATE INDEX idx_notifications_user ON notifications(user_id)`,
+            `CREATE INDEX idx_messages_sender ON messages(sender_id)`,
+            `CREATE INDEX idx_messages_receiver ON messages(receiver_id)`
         ];
         
         for (const statement of sqlStatements) {
@@ -92,8 +93,14 @@ const migrateDatabase = async () => {
             await new Promise((resolve, reject) => {
                 db.query(statement, (err, result) => {
                     if (err) {
-                        console.error('SQL 执行错误:', err);
-                        reject(err);
+                        // 如果是索引已存在的错误，则忽略
+                        if (err.code === 'ER_DUP_KEYNAME' || err.errno === 1061) {
+                            console.log('索引已存在，跳过创建');
+                            resolve(result);
+                        } else {
+                            console.error('SQL 执行错误:', err);
+                            reject(err);
+                        }
                     } else {
                         console.log('SQL 执行成功');
                         resolve(result);

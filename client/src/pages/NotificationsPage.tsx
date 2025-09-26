@@ -90,7 +90,8 @@ const NotificationsPage: React.FC = () => {
   // 标记单个通知为已读
   const markAsRead = async (notificationId: number) => {
     try {
-      const response = await fetch('/api/notifications/mark-read', {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/notifications/mark-read`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
