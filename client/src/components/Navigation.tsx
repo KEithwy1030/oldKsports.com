@@ -47,7 +47,7 @@ const Navigation: React.FC = () => {
   
   // 获取通知数量
   const fetchNotificationCounts = async () => {
-    if (!user) return;
+    if (!user || !isAuthenticated) return;
     
     try {
       const response = await fetch('/api/notifications/unread-count', {

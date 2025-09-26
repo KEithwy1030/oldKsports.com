@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Briefcase } from 'lucide-react';
 import { handleApiError } from '../utils/api';
 import { registerSchema } from '../schemas/auth.schema';
+import { INDUSTRY_ROLES } from '../data/constants';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    roles: [] as string[]
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -36,6 +38,15 @@ const RegisterPage: React.FC = () => {
     if (name === 'password') {
       calculatePasswordStrength(value);
     }
+  };
+
+  const handleRoleChange = (roleId: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      roles: checked 
+        ? [...prev.roles, roleId]
+        : prev.roles.filter(id => id !== roleId)
+    }));
   };
 
   const calculatePasswordStrength = (password: string) => {
@@ -68,7 +79,7 @@ const RegisterPage: React.FC = () => {
       // 使用 Zod schema 验证表单数据
       const validatedData = registerSchema.parse(formData);
       
-      const success = await register(validatedData.username, validatedData.email, validatedData.password);
+      const success = await register(validatedData.username, validatedData.email, validatedData.password, formData.roles);
       if (success) {
         navigate('/');
       }
@@ -280,6 +291,27 @@ const RegisterPage: React.FC = () => {
                   )}
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Briefcase className="inline w-4 h-4 mr-1" />
+                行业身份 (可选)
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {INDUSTRY_ROLES.map(role => (
+                  <label key={role.id} className="flex items-center space-x-2 cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={formData.roles.includes(role.id)}
+                      onChange={(e) => handleRoleChange(role.id, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <span className="text-sm text-gray-700">{role.label}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">选择您的行业身份，帮助其他用户更好地了解您</p>
             </div>
 
             <div className="flex items-center">

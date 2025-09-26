@@ -54,13 +54,18 @@ const apiRequest = async <T = any>(endpoint: string, options: RequestInit = {}):
       const errorData: any = await response.json().catch(() => ({}));
       console.error('API Error:', response.status, errorData);
       
-      // 如果是403错误且提示无效token，自动清理token
-      if (response.status === 403 && (errorData.error?.includes('无效的访问令牌') || errorData.error?.includes('invalid signature'))) {
+      // 如果是401或403错误且提示无效token，自动清理token
+      if ((response.status === 401 || response.status === 403) && 
+          (errorData.error?.includes('无效的访问令牌') || errorData.error?.includes('invalid signature') || 
+           errorData.error?.includes('Access token required') || errorData.error?.includes('Unauthorized'))) {
         console.warn('检测到无效token，正在清理...');
         localStorage.removeItem('oldksports_auth_token');
         localStorage.removeItem('oldksports_user');
         document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        // 不要立即刷新，而是抛出错误让上层处理
+        // 对于401错误，静默处理，不抛出错误
+        if (response.status === 401) {
+          return Promise.resolve({} as T);
+        }
       }
       
       // 创建一个带有response属性的错误对象
@@ -112,10 +117,10 @@ export const authAPI = {
     return response;
   },
   
-  register: async (username: string, email: string, password: string): Promise<AuthResponse> => {
+  register: async (username: string, email: string, password: string, roles?: string[]): Promise<AuthResponse> => {
     const response = await apiRequest<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ username, email, password })
+      body: JSON.stringify({ username, email, password, roles })
     });
     
     // Store token and user data

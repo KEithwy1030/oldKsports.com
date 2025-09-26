@@ -1,30 +1,19 @@
 # Dependencies
-/node_modules
-/client/node_modules
-/server/node_modules
+node_modules/
+*/node_modules/
 
-# Build artifacts
-/dist
-/client/dist
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
 
-# Environment variables (VERY IMPORTANT!)
+# Environment variables
 .env
-.env.*
-/client/.env
-/client/.env.*
-/server/.env
-/server/.env.*
-
-# IDE and OS files
-.vscode/
-.idea/
-.DS_Store
-*.log
-
-# Uploads and temporary files
-/uploads
-/tmp
-*.tmp
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Logs
 logs
@@ -32,7 +21,6 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 lerna-debug.log*
 
 # Runtime data
@@ -42,7 +30,7 @@ pids
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
+coverage/
 *.lcov
 
 # nyc test coverage
@@ -51,14 +39,17 @@ coverage
 # Dependency directories
 jspm_packages/
 
-# TypeScript cache
-*.tsbuildinfo
-
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -69,9 +60,6 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env.test
-
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -81,7 +69,6 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
@@ -96,14 +83,71 @@ tmp/
 temp/
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
+# Migration files (temporary)
+mysql_migration/
+migrate-database.js
+migrate-now.js
+migration-guide.md
+quick-migrate.sh
+start-migration.bat
 
+# Debug and test files
+server/debug-users.js
+server/auth-fix.js
+server/check-admin-delete.js
+server/fix-user-auth.js
+server/check-admin-status.js
+server/check-admin.js
+server/fix-admin-account.js
+server/fix-legacy-image-urls.js
+server/manage-admin-account.js
+server/view-zeabur-users.js
+server/test-backend.js
+server/ultra-simple-migrate.js
+server/simple-migrate.js
+server/minimal-migrate.js
+server/start-production.js
+
+# Documentation files (keep only essential)
+AVATAR_CROP_FIX.md
+DEPLOYMENT_CHECKLIST.md
+DEPLOYMENT_GUIDE.md
+DEPLOYMENT_NOTES.md
+IMAGE_DISPLAY_GUIDE.md
+test_checklist.md
+TROUBLESHOOTING_GUIDE.md
+ZEABUR_DEPLOYMENT.md
+
+# Python files
+fast_port_manager.py
+
+# Backup files
+*.backup
+*.bak
+*.tmp
+
+# Upload directories (keep structure but not files)
+server/uploads/
+server/public/uploads/
+server/server/uploads/
+client/public/uploads/
+client/dist/uploads/
+
+# Package lock files (keep only root level)
+server/package-lock.json
+client/package-lock.json

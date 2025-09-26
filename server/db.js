@@ -13,14 +13,36 @@ console.log('MYSQL_DATABASE:', process.env.MYSQL_DATABASE);
 console.log('MYSQL_PORT:', process.env.MYSQL_PORT);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
-// 验证必需的环境变量
-const requiredEnvVars = ['MYSQL_HOST', 'MYSQL_USERNAME', 'MYSQL_PASSWORD', 'MYSQL_DATABASE'];
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+// 本地开发环境默认配置
+const isDevelopment = process.env.NODE_ENV === 'development';
 
-if (missingVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingVars);
-  console.error('Please check your Zeabur environment variable configuration.');
-  process.exit(1);
+// 验证必需的环境变量，开发环境使用默认值
+const defaultConfig = {
+  MYSQL_HOST: 'localhost',
+  MYSQL_USERNAME: 'root',
+  MYSQL_PASSWORD: 'k19941030',
+  MYSQL_DATABASE: 'old_k_sports',
+  MYSQL_PORT: '3306'
+};
+
+// 在开发环境中使用默认配置
+if (isDevelopment) {
+  Object.keys(defaultConfig).forEach(key => {
+    if (!process.env[key]) {
+      process.env[key] = defaultConfig[key];
+      console.log(`🔧 Using default ${key}: ${key.includes('PASSWORD') ? '***' : defaultConfig[key]}`);
+    }
+  });
+} else {
+  // 生产环境严格检查环境变量
+  const requiredEnvVars = ['MYSQL_HOST', 'MYSQL_USERNAME', 'MYSQL_PASSWORD', 'MYSQL_DATABASE'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+  if (missingVars.length > 0) {
+    console.error('❌ Missing required environment variables:', missingVars);
+    console.error('Please check your Zeabur environment variable configuration.');
+    process.exit(1);
+  }
 }
 
 // 使用Zeabur提供的数据库配置
@@ -34,18 +56,12 @@ const connectionConfig = {
   password: process.env.MYSQL_PASSWORD,
   database: DATABASE_NAME,
   port: parseInt(process.env.MYSQL_PORT || '3306', 10),
-  // 连接超时和重试配置
+  // 连接超时配置
   connectTimeout: 30000,        // 30秒连接超时
-  acquireTimeout: 30000,        // 30秒获取连接超时
-  timeout: 30000,               // 30秒查询超时
-  reconnect: true,              // 自动重连
   // 连接池配置
   connectionLimit: 10,          // 最大连接数
   queueLimit: 0,                // 无限制队列
-  waitForConnections: true,     // 等待可用连接
-  // 重试配置
-  retryDelay: 2000,             // 2秒重试延迟
-  maxRetries: 3                 // 最大重试次数
+  waitForConnections: true      // 等待可用连接
 };
 
 console.log('Connection config:', {

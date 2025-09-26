@@ -199,3 +199,41 @@
 .animate-scroll {
   animation: scroll 2s ease-in-out infinite;
 }
+
+/* HTML内容中的图片样式 */
+.reply-content img,
+.post-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 8px 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  object-fit: contain;
+}
+
+.reply-content img:hover,
+.post-content img:hover {
+  transform: scale(1.02);
+}
+
+/* 图片网格样式优化 */
+.post-images-grid img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+/* @用户名样式 - 统一绿色显示 */
+.mention-user {
+  color: #10b981 !important; /* emerald-500 */
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  transition: color 0.2s ease !important;
+}
+
+.mention-user:hover {
+  color: #059669 !important; /* emerald-600 */
+  text-decoration: underline !important;
+}

@@ -35,18 +35,36 @@ export const authenticateToken = async (req, res, next) => {
     console.log('JWT解码成功:', { userId: decoded.userId, exp: decoded.exp });
     
     // 从数据库获取用户信息
+    console.log('🔍 查询用户ID:', decoded.userId, '类型:', typeof decoded.userId);
+    
     const rows = await new Promise((resolve, reject) => {
       getDb().query(
         'SELECT id, username, email, points, is_admin FROM users WHERE id = ?',
         [decoded.userId],
         (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
+          if (err) {
+            console.error('❌ 数据库查询错误:', err);
+            reject(err);
+          } else {
+            console.log('📊 数据库查询结果:', results.length, '条记录');
+            resolve(results);
+          }
         }
       );
     });
 
     if (rows.length === 0) {
+      console.log('❌ 用户不存在，用户ID:', decoded.userId);
+      
+      // 添加调试：查询所有用户
+      const allUsers = await new Promise((resolve, reject) => {
+        getDb().query('SELECT id, username FROM users LIMIT 10', (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      });
+      console.log('📋 数据库中的用户:', allUsers);
+      
       return res.status(401).json({
         success: false,
         error: '用户不存在'

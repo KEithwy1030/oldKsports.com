@@ -6,6 +6,8 @@ import PageTransition from '../components/PageTransition';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 import { formatTimeAgo } from '../utils/userUtils';
+import { fixImageUrlsInContent } from '../utils/imageUtils';
+import HtmlContent from '../components/HtmlContent';
 
 const ForumSubsectionPage: React.FC = () => {
   const { subsection } = useParams<{ subsection: string }>();
@@ -161,9 +163,12 @@ const ForumSubsectionPage: React.FC = () => {
                       {post.title}
                   </h3>
                     
-                  <p className="text-gray-300 text-sm mb-4 line-clamp-2 leading-relaxed">
-                    {post.content}
-                  </p>
+                  <div className="text-gray-300 text-sm mb-4 line-clamp-2 leading-relaxed">
+                    <HtmlContent 
+                      content={post.content || ''} 
+                      className="post-preview"
+                    />
+                  </div>
                     
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">

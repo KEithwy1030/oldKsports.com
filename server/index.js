@@ -26,6 +26,7 @@ const PORT = process.env.PORT || 8080; // 生产环境端口或本地开发端�
 const corsOrigins = [
   process.env.CORS_ORIGIN,
   "https://oldksports.zeabur.app",
+  "https://oldksports-frontend.zeabur.app",
   "http://localhost:5173"
 ].filter(Boolean); // 过滤掉undefined值
 
@@ -35,7 +36,8 @@ app.use(cors({
   origin: corsOrigins.length > 0 ? corsOrigins : "http://localhost:5173", 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 app.use(express.json({ limit: '1gb' }));
 app.use(express.urlencoded({ limit: '1gb', extended: true }));
@@ -51,6 +53,45 @@ if (!fs.existsSync(uploadsDir)) {
 if (!fs.existsSync(publicUploadsDir)) {
   fs.mkdirSync(publicUploadsDir, { recursive: true });
 }
+
+// 兼容处理：启动时将历史图片统一迁移到 public/uploads/images
+const migrateLegacyImages = () => {
+  try {
+    const legacyDirs = [
+      // 旧后端路径
+      uploadsDir,
+      // 旧前端构建前的静态路径（本地开发可能存在）
+      path.join(process.cwd(), '..', 'client', 'public', 'uploads', 'images')
+    ];
+
+    legacyDirs.forEach((dir) => {
+      try {
+        if (!fs.existsSync(dir)) return;
+        const files = fs.readdirSync(dir);
+        files.forEach((file) => {
+          const src = path.join(dir, file);
+          const dst = path.join(publicUploadsDir, file);
+          try {
+            if (fs.statSync(src).isFile()) {
+              if (!fs.existsSync(dst)) {
+                fs.copyFileSync(src, dst);
+                console.log('迁移历史图片:', file);
+              }
+            }
+          } catch (e) {
+            console.warn('迁移单个文件失败:', file, e?.message);
+          }
+        });
+      } catch (e) {
+        console.warn('扫描历史目录失败:', dir, e?.message);
+      }
+    });
+  } catch (e) {
+    console.warn('迁移历史图片流程出现异常:', e?.message);
+  }
+};
+// 启动时执行一次迁移
+migrateLegacyImages();
 
 // 配置multer用于文件上传
 const storage = multer.diskStorage({
@@ -83,9 +124,16 @@ const upload = multer({
 // 静态文件服务 - 提供上传的图片访问
 app.use('/uploads/images', express.static(path.join(process.cwd(), 'public', 'uploads', 'images')));
 
-// Health check route
+// Health check routes（提供两种路径，便于端口探活脚本使用）
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", message: "Server is running" });
+});
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", message: "Server is running" });
+});
+// 根路径返回200，避免部分端口检测脚本把 GET / 视为探活
+app.get('/', (req, res) => {
+  res.status(200).send('OK');
 });
 
 // 图片上传接口
@@ -138,6 +186,8 @@ console.log('使用静态文件路径:', staticPath);
 app.use('/uploads/images', express.static(staticPath));
 // 兼容旧的URL路径（直接/uploads/文件名）  
 app.use('/uploads', express.static(staticPath));
+// 兼容少数旧内容直接引用 /public/uploads/images 前缀
+app.use('/public/uploads/images', express.static(staticPath));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);

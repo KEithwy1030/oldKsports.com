@@ -8,7 +8,7 @@
         "rootDir": "client"
       },
       "build": {
-        "commands": ["npm install", "npm run build"]
+        "commands": ["npm ci", "npm run build"]
       },
       "deploy": {
         "type": "static",
@@ -26,22 +26,22 @@
         "rootDir": "server"
       },
       "build": {
-        "commands": ["npm install --production"]
+        "commands": ["npm ci --production"]
       },
       "deploy": {
         "type": "node",
-        "startCommand": "npm start"
+        "startCommand": "node start-production.js"
       },
       "env": {
         "NODE_ENV": "production",
         "PORT": "8080",
         "CORS_ORIGIN": "https://oldksports.zeabur.app",
-        "MYSQL_HOST": "service-68d15b2c030e2df4a569eaa5.zeabur.internal",
+        "MYSQL_HOST": "${MYSQL_HOST}",
         "MYSQL_PORT": "3306",
-        "MYSQL_USERNAME": "root",
-        "MYSQL_PASSWORD": "${MYSQL_ROOT_PASSWORD}",
+        "MYSQL_USERNAME": "${MYSQL_USERNAME}",
+        "MYSQL_PASSWORD": "${MYSQL_PASSWORD}",
         "MYSQL_DATABASE": "${MYSQL_DATABASE}",
-        "JWT_SECRET": "OldKSports_Production_JWT_Secret_2024_Zeabur_Deployment"
+        "JWT_SECRET": "${JWT_SECRET}"
       }
     }
   ]

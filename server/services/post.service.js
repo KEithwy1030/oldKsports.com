@@ -3,18 +3,36 @@ import { getDb } from '../db.js';
 import userStatsService from './userStats.service.js';
 import NotificationService from './notification.service.js';
 
+// 复用连接池实例，避免未定义的 db 访问
+const db = getDb();
+
+// 统一分类映射：支持中文名称与英文ID互通
+const normalizeCategory = (rawCategory) => {
+    if (!rawCategory) return null; // null 表示不筛选
+    const text = String(rawCategory).trim();
+    const map = {
+        '行业茶水间': 'general',
+        '商务＆合作': 'business',
+        '商务&合作': 'business',
+        '黑榜曝光': 'news',
+        'all': null,
+        '全部': null
+    };
+    if (['general', 'business', 'news'].includes(text)) return text;
+    return map.hasOwnProperty(text) ? map[text] : text;
+};
+
 export const findPosts = (category) => {
     return new Promise((resolve, reject) => {
-        // 检查数据库连接状态
-        if (db.state === 'disconnected') {
-            console.log('数据库未连接，返回空数据');
-            return resolve([]);
-        }
+        // 连接池在 getDb() 内部已确保可用，不再读取未定义的 db.state
 
-        // 修改查询以包含最新回复时间，并按最新活动时间排序
-        const q = category ? 
+        const normalized = normalizeCategory(category);
+
+        // 修改查询以包含最新回复时间和回复数量，并按最新活动时间排序
+        const q = normalized ? 
             `SELECT p.id, p.title, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar,
-             COALESCE(MAX(r.created_at), p.created_at) as latest_activity
+             COALESCE(MAX(r.created_at), p.created_at) as latest_activity,
+             COUNT(r.id) as reply_count
              FROM users u 
              JOIN forum_posts p ON u.id = p.author_id 
              LEFT JOIN forum_replies r ON p.id = r.post_id 
@@ -22,13 +40,15 @@ export const findPosts = (category) => {
              GROUP BY p.id, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar
              ORDER BY latest_activity DESC` :
             `SELECT p.id, p.title, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar,
-             COALESCE(MAX(r.created_at), p.created_at) as latest_activity
+             COALESCE(MAX(r.created_at), p.created_at) as latest_activity,
+             COUNT(r.id) as reply_count
              FROM users u 
              JOIN forum_posts p ON u.id = p.author_id 
              LEFT JOIN forum_replies r ON p.id = r.post_id 
              GROUP BY p.id, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar
              ORDER BY latest_activity DESC`;
-        getDb().query(q, [category], (err, data) => {
+        const params = normalized ? [normalized] : [];
+        db.query(q, params, (err, data) => {
             if (err) {
                 console.error('查询帖子失败:', err.message);
                 return resolve([]); // 返回空数组而不是拒绝
@@ -49,7 +69,8 @@ export const findPostById = (postId) => {
             const post = postData[0];
             
             // 然后获取该帖子的回复
-            const repliesQuery = "SELECT r.id, r.content, r.author_id, r.created_at, r.likes, u.username as author FROM forum_replies r LEFT JOIN users u ON r.author_id = u.id WHERE r.post_id = ? ORDER BY r.created_at ASC";
+            // 使用 COALESCE 在用户缺失时提供兜底昵称，并统一时间别名为 createdAt
+            const repliesQuery = "SELECT r.id, r.content, r.author_id, r.created_at AS createdAt, r.likes, COALESCE(u.username, CONCAT('用户#', r.author_id)) AS author FROM forum_replies r LEFT JOIN users u ON r.author_id = u.id WHERE r.post_id = ? ORDER BY r.created_at ASC";
             getDb().query(repliesQuery, [postId], (err, repliesData) => {
                 if (err) return reject(err);
                 
@@ -101,7 +122,7 @@ export const createPost = async (postData, userId) => {
         const values = [ 
             postData.title || null, 
             postData.content || null, 
-            postData.category || 'general', 
+            normalizeCategory(postData.category) || 'general', 
             userId || null, 
             username || null, 
             new Date() 
@@ -128,7 +149,13 @@ export const createPost = async (postData, userId) => {
 
 export const deletePost = (postId, userId, isAdmin = false) => {
     return new Promise((resolve, reject) => {
-        console.log('删除帖子服务:', { postId, userId, isAdmin });
+        console.log('🗑️ 删帖服务详情:', { 
+            postId, 
+            userId, 
+            isAdmin, 
+            isAdminType: typeof isAdmin,
+            isAdminValue: isAdmin 
+        });
         
         // 管理员可以删除任何帖子，普通用户只能删除自己的帖子
         const q = isAdmin 
@@ -136,15 +163,27 @@ export const deletePost = (postId, userId, isAdmin = false) => {
             : "DELETE FROM forum_posts WHERE `id` = ? AND `author_id` = ?";
         const params = isAdmin ? [postId] : [postId, userId];
         
-        console.log('执行SQL:', q, '参数:', params);
+        console.log('📝 执行SQL:', q);
+        console.log('📝 SQL参数:', params);
+        console.log('📝 管理员权限:', isAdmin ? '是' : '否');
         
         getDb().query(q, params, (err, data) => {
             if (err) {
-                console.error('删除SQL错误:', err);
+                console.error('❌ 删除SQL错误:', err);
                 return reject(err);
             }
-            console.log('删除结果:', data);
-            if (data.affectedRows === 0) return reject(new Error("Forbidden"));
+            console.log('📊 删除结果:', {
+                affectedRows: data.affectedRows,
+                changedRows: data.changedRows,
+                insertId: data.insertId
+            });
+            
+            if (data.affectedRows === 0) {
+                console.log('🚫 没有行被删除，可能是权限不足或帖子不存在');
+                return reject(new Error("Forbidden"));
+            }
+            
+            console.log('✅ 删帖成功');
             resolve("Post has been deleted!");
         });
     });

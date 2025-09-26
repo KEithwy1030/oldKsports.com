@@ -1,4 +1,5 @@
 import React from 'react';
+import { showUserCard, hideUserCard } from './UserHoverCard';
 import { User } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
@@ -72,8 +73,13 @@ const ClickableUserAvatar: React.FC<ClickableUserAvatarProps> = ({
     <div className={`flex items-center space-x-2 ${className}`}>
       <button
         onClick={handleClick}
-        className={`${getSizeClasses()} rounded-full overflow-hidden hover:ring-2 hover:ring-emerald-400/50 transition-all duration-200 hover:scale-105 cursor-pointer group`}
+        className={`${getSizeClasses()} rounded-full overflow-hidden transition-all duration-200 cursor-pointer group avatar-btn focus:outline-none focus:ring-0 focus-visible:outline-none outline-none ring-0`}
         title={`与 ${username} 私信`}
+        onClickCapture={(e) => {
+          // 点击头像先展示用户卡片
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          showUserCard(username, rect);
+        }}
       >
         {avatar ? (
           <img
@@ -93,6 +99,10 @@ const ClickableUserAvatar: React.FC<ClickableUserAvatarProps> = ({
           onClick={handleClick}
           className="text-sm font-medium text-gray-300 hover:text-emerald-400 transition-colors cursor-pointer"
           title={`与 ${username} 私信`}
+          onClickCapture={(e) => {
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            showUserCard(username, rect);
+          }}
         >
           {username}
         </button>

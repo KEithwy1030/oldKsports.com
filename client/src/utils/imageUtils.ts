@@ -1,189 +1,101 @@
-// 图片处理工具函数
-import { smartResize } from './advancedImageUtils';
-
-export interface ImageCompressionOptions {
-  maxWidth?: number;
-  maxHeight?: number;
-  quality?: number;
-  format?: 'jpeg' | 'png' | 'webp';
-  enhance?: boolean;
-}
-
-export interface ImageCompressionResult {
-  dataUrl: string;
-  sizeInMB: number;
-  originalSize: number;
-  compressionRatio: number;
-  originalFileName?: string;
-}
+// 图片URL构建工具
+// 支持本地开发和生产环境
 
 /**
- * 高质量图片压缩函数
- * @param file 原始图片文件
- * @param options 压缩选项
- * @returns Promise<ImageCompressionResult>
+ * 构建图片URL
+ * @param imagePath 图片路径，如 "/uploads/images/filename.jpg"
+ * @returns 完整的图片URL
  */
-export const compressImage = async (
-  file: File, 
-  options: ImageCompressionOptions = {}
-): Promise<ImageCompressionResult> => {
-  const {
-    maxWidth = 2560,
-    maxHeight = 2560,
-    quality = 0.98,
-    format = 'jpeg',
-    enhance = true
-  } = options;
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      const img = new Image();
-      
-      img.onload = () => {
-        try {
-          // 创建高质量Canvas
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d', { 
-            alpha: false,
-            desynchronized: false,
-            colorSpace: 'srgb'
-          });
-          
-          if (!ctx) {
-            reject(new Error('无法创建Canvas上下文'));
-            return;
-          }
-
-          // 设置最高质量渲染参数
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          // ctx.textRenderingOptimization = 'optimizeQuality'; // 移除不存在的属性
-          
-          let { width: originalWidth, height: originalHeight } = img;
-          
-          // 智能尺寸计算 - 确保最小质量基准
-          const minDimension = 1500; // 进一步提高最小尺寸要求
-          const maxDimension = Math.max(maxWidth, maxHeight);
-          
-          let targetWidth = originalWidth;
-          let targetHeight = originalHeight;
-          
-          // 第一步：如果图片太小，先放大到最小尺寸
-          if (originalWidth < minDimension || originalHeight < minDimension) {
-            const aspectRatio = originalWidth / originalHeight;
-            if (originalWidth < originalHeight) {
-              targetHeight = minDimension;
-              targetWidth = minDimension * aspectRatio;
-            } else {
-              targetWidth = minDimension;
-              targetHeight = minDimension / aspectRatio;
-            }
-          }
-          
-          // 第二步：如果图片太大，缩小到最大尺寸
-          if (targetWidth > maxWidth || targetHeight > maxHeight) {
-            const aspectRatio = targetWidth / targetHeight;
-            if (targetWidth / maxWidth > targetHeight / maxHeight) {
-              targetWidth = maxWidth;
-              targetHeight = maxWidth / aspectRatio;
-            } else {
-              targetHeight = maxHeight;
-              targetWidth = maxHeight * aspectRatio;
-            }
-          }
-          
-          // 确保尺寸为整数
-          targetWidth = Math.round(targetWidth);
-          targetHeight = Math.round(targetHeight);
-          
-          // 使用智能缩放和增强处理
-          if (enhance) {
-            const enhancedCanvas = smartResize(img, targetWidth, targetHeight);
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            ctx.drawImage(enhancedCanvas, 0, 0);
-          } else {
-            // 设置Canvas尺寸
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            
-            // 高质量绘制 - 使用最佳实践
-            ctx.clearRect(0, 0, targetWidth, targetHeight);
-            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-          }
-          
-          // 生成高质量图片
-          const mimeType = `image/${format}`;
-          const compressedResult = canvas.toDataURL(mimeType, format === 'jpeg' ? quality : undefined);
-          
-          // 精确计算文件大小
-          const base64 = compressedResult.split(',')[1];
-          const sizeInBytes = Math.round((base64.length * 3) / 4);
-          const sizeInMB = sizeInBytes / (1024 * 1024);
-          
-          resolve({
-            dataUrl: compressedResult,
-            sizeInMB,
-            originalSize: file.size,
-            compressionRatio: (file.size - sizeInBytes) / file.size,
-            originalFileName: file.name
-          });
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      img.onerror = () => {
-        reject(new Error('图片加载失败'));
-      };
-      
-      img.src = result;
-    };
-    
-    reader.onerror = () => {
-      reject(new Error('文件读取失败'));
-    };
-    
-    reader.readAsDataURL(file);
-  });
-};
-
-/**
- * 批量压缩图片
- * @param files 图片文件数组
- * @param options 压缩选项
- * @returns Promise<ImageCompressionResult[]>
- */
-export const compressImages = async (
-  files: File[], 
-  options: ImageCompressionOptions = {}
-): Promise<ImageCompressionResult[]> => {
-  const results: ImageCompressionResult[] = [];
+export const buildImageUrl = (imagePath: string): string => {
+  if (!imagePath) return '';
   
-  for (const file of files) {
+  // 放行 data:/blob: 这类内联或临时URL（用于刚发表的回复）
+  if (imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+    return imagePath;
+  }
+
+  // 如果已经是完整URL，做兼容性规范化（把 localhost:3001 统一到 8080）
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     try {
-      const result = await compressImage(file, options);
-      results.push(result);
-    } catch (error) {
-      console.error(`压缩图片 ${file.name} 失败:`, error);
-      throw error;
-    }
+      const url = new URL(imagePath);
+      if (url.hostname === 'localhost' && url.port === '3001') {
+        url.port = '8080';
+        return url.toString();
+      }
+    } catch {}
+    return imagePath;
   }
   
-  return results;
+  // 确保路径以 / 开头
+  const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  
+  // 获取API基础URL
+  const apiUrl = import.meta.env.VITE_API_URL || '/api';
+  
+  // 本地开发环境：API URL是 /api，需要替换为后端地址
+  if (apiUrl === '/api') {
+    // 本地开发时，统一使用8080端口作为后端服务
+    return `http://localhost:8080${normalizedPath}`;
+  }
+  
+  // 生产环境：API URL是完整URL，替换 /api 为根路径
+  if (apiUrl.startsWith('http')) {
+    return apiUrl.replace('/api', '') + normalizedPath;
+  }
+  
+  // 兜底方案：使用当前域名
+  return window.location.origin + normalizedPath;
 };
 
 /**
- * 验证图片文件
- * @param file 文件
- * @param maxSizeInMB 最大文件大小(MB)
- * @returns boolean
+ * 构建图片上传URL
+ * @returns 图片上传的完整URL
  */
-export const validateImageFile = (file: File, maxSizeInMB: number = 10): boolean => {
-  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-  const sizeInMB = file.size / (1024 * 1024);
+export const buildUploadUrl = (): string => {
+  const apiUrl = import.meta.env.VITE_API_URL || '/api';
+  return `${apiUrl}/upload/images`;
+};
+
+/**
+ * 检查图片URL是否有效
+ * @param imagePath 图片路径
+ * @returns 是否有效
+ */
+export const isValidImagePath = (imagePath: string): boolean => {
+  if (!imagePath) return false;
   
-  return validTypes.includes(file.type) && sizeInMB <= maxSizeInMB;
+  // 检查是否是图片文件
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+  const hasValidExtension = imageExtensions.some(ext => 
+    imagePath.toLowerCase().includes(ext)
+  );
+  
+  return hasValidExtension;
+};
+
+/**
+ * 从HTML内容中提取图片URL并修复
+ * @param content HTML内容
+ * @returns 修复后的HTML内容
+ */
+export const fixImageUrlsInContent = (content: string): string => {
+  if (!content) return content;
+  
+  // 先处理历史数据中的绝对URL，将3001端口统一替换为8080
+  let fixedContent = content.replace(
+    /http:\/\/localhost:3001(\/uploads\/images\/[^"]*)/g,
+    'http://localhost:8080$1'
+  );
+  
+  // 然后匹配所有img标签的src属性，使用buildImageUrl统一处理
+  return fixedContent.replace(
+    /<img([^>]+)src="([^"]+)"([^>]*)>/g,
+    (match, before, src, after) => {
+      if (src.startsWith('data:') || src.startsWith('blob:')) {
+        return `<img${before}src="${src}"${after}>`;
+      }
+      const fixedSrc = buildImageUrl(src);
+      return `<img${before}src="${fixedSrc}"${after}>`;
+    }
+  );
 };

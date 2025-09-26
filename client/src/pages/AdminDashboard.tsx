@@ -126,42 +126,7 @@ const AdminDashboard: React.FC = () => {
       setLoading(false);
     } catch (error) {
       console.error('获取仪表板数据失败:', error);
-      // 如果API失败，使用模拟数据
-      setStats({
-        totalUsers: 156,
-        totalPosts: 1247,
-        totalReplies: 3892,
-        onlineUsers: 23,
-        todayPosts: 12,
-        todayReplies: 45,
-        userGrowth: 8.5,
-        postGrowth: 12.3
-      });
-
-      setRecentActivity([
-        {
-          id: 1,
-          type: 'post',
-          content: '发布了新帖子：体育新闻讨论',
-          user: 'testuser',
-          timestamp: '2分钟前'
-        },
-        {
-          id: 2,
-          type: 'reply',
-          content: '回复了帖子：技术分享',
-          user: '老k不幽默',
-          timestamp: '5分钟前'
-        },
-        {
-          id: 3,
-          type: 'user',
-          content: '新用户注册',
-          user: 'newuser123',
-          timestamp: '10分钟前'
-        }
-      ]);
-
+      // 不再使用模拟数据，直接提示加载失败，保持显示真实状态
       setLoading(false);
     }
   };

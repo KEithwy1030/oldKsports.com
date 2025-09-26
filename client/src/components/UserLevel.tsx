@@ -42,7 +42,7 @@ const UserLevelComponent: React.FC<UserLevelProps> = ({ username, className = ''
 
   if (isLoading) {
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium bg-gray-600/20 text-gray-400 ${className}`}>
+      <span className={`inline-flex items-center whitespace-nowrap leading-none px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-medium bg-gray-600/20 text-gray-400 border border-gray-500/20 ${className}`}>
         加载中...
       </span>
     );
@@ -50,7 +50,7 @@ const UserLevelComponent: React.FC<UserLevelProps> = ({ username, className = ''
 
   if (error || !userLevel) {
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium bg-gray-600/20 text-gray-400 ${className}`}>
+      <span className={`inline-flex items-center whitespace-nowrap leading-none px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-medium bg-gray-600/20 text-gray-400 border border-gray-500/20 ${className}`}>
         未知等级
       </span>
     );
@@ -58,7 +58,7 @@ const UserLevelComponent: React.FC<UserLevelProps> = ({ username, className = ''
 
   return (
     <span 
-      className={`px-2 py-1 rounded-full text-xs font-medium border ${className}`}
+      className={`inline-flex items-center whitespace-nowrap leading-none px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-medium border shadow-sm ${className}`}
       style={{ 
         backgroundColor: `${userLevel.color}20`,
         borderColor: `${userLevel.color}40`,

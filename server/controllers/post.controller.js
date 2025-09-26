@@ -47,15 +47,30 @@ export const getPost = async (req, res) => {
 
 export const addPost = async (req, res) => {
     // 使用认证中间件设置的req.user，而不是getUserInfoFromToken
-    if (!req.user) return res.status(401).json("Not authenticated!");
+    if (!req.user) {
+        console.log('❌ 发帖失败: 用户未认证');
+        return res.status(401).json({ success: false, error: "用户未认证" });
+    }
 
     try {
-        console.log('用户信息:', req.user);
-        console.log('帖子数据:', req.body);
+        console.log('📝 发帖请求 - 用户信息:', req.user);
+        console.log('📝 发帖请求 - 请求体:', req.body);
+        
+        // 基础校验：标题必填且不超过15字
+        const { title } = req.body || {};
+        if (!title || typeof title !== 'string' || title.trim().length === 0) {
+          return res.status(400).json({ success: false, error: '标题不能为空' });
+        }
+        if (title.trim().length > 15) {
+          return res.status(400).json({ success: false, error: '标题长度不能超过15个字符' });
+        }
         
         const userId = req.user.id;
+        console.log('🔍 发帖用户ID:', userId, '类型:', typeof userId);
+        
         if (!userId) {
-            return res.status(400).json("Invalid user information");
+            console.log('❌ 发帖失败: 用户ID无效');
+            return res.status(400).json({ success: false, error: "用户ID无效" });
         }
         
         const message = await PostService.createPost(req.body, userId);
@@ -68,23 +83,32 @@ export const addPost = async (req, res) => {
 
 export const deletePost = async (req, res) => {
     // 使用认证中间件设置的req.user，而不是getUserInfoFromToken
-    if (!req.user) return res.status(401).json("Not authenticated!");
+    if (!req.user) {
+        console.log('❌ 删帖失败: 用户未认证');
+        return res.status(401).json({ success: false, error: "用户未认证" });
+    }
 
     try {
-        console.log('删除帖子请求:', {
+        console.log('🗑️ 删帖请求详情:', {
             postId: req.params.id,
             userId: req.user.id,
             username: req.user.username,
-            isAdmin: req.user.isAdmin
+            isAdmin: req.user.isAdmin,
+            isAdminType: typeof req.user.isAdmin,
+            isAdminValue: req.user.isAdmin
         });
         
         // 管理员可以删除任何帖子，普通用户只能删除自己的帖子
         const message = await PostService.deletePost(req.params.id, req.user.id, req.user.isAdmin);
-        return res.status(200).json(message);
+        console.log('✅ 删帖成功:', message);
+        return res.status(200).json({ success: true, message });
     } catch (err) {
-        console.error('删除帖子失败:', err.message);
-        if (err.message === "Forbidden") return res.status(403).json("You can only delete your post!");
-        return res.status(500).json(err);
+        console.error('❌ 删帖失败:', err.message);
+        if (err.message === "Forbidden") {
+            console.log('🚫 权限不足: 只能删除自己的帖子');
+            return res.status(403).json({ success: false, error: "只能删除自己的帖子" });
+        }
+        return res.status(500).json({ success: false, error: err.message || "删帖失败" });
     }
 };
 

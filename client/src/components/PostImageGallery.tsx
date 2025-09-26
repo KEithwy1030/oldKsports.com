@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, ZoomIn } from 'lucide-react';
+import { buildImageUrl } from '../utils/imageUtils';
 import '../styles/imageOptimization.css';
 import '../styles/modal-fix.css';
 
@@ -34,32 +35,32 @@ const PostImageGallery: React.FC<PostImageGalleryProps> = ({
     setSelectedImage(null);
   };
 
-  const getGridLayout = (count: number) => {
-    // 微博风格：3张图片使用1行3列布局
-    return 'grid-cols-3';
-  };
+  // 列表预览：固定一行三列的紧凑网格
+  const getGridLayout = () => 'grid-cols-3';
 
-  const getImageSize = (count: number, index: number) => {
-    // 保持图片原始比例，避免变形
-    return 'h-24'; // 固定高度，宽度自适应
-  };
+  const getItemStyle = (): React.CSSProperties => ({
+    width: '100%',
+    height: '112px',
+    borderRadius: '10px',
+    overflow: 'hidden'
+  });
 
   return (
     <>
-      <div className={`h-full flex flex-col ${className}`}>
-        {/* Image Grid - 微博风格单行显示 */}
-        <div className={`image-grid ${getGridLayout(displayImages.length)} gap-1`} style={{ height: '96px' }}>
+      <div className={`h-full flex flex-col ${className}`} style={{ marginBottom: 12 }}>
+        {/* 列表页紧凑预览 */}
+        <div className={`grid ${getGridLayout()} gap-3`} style={{ height: '116px', width: '540px', marginTop: -40, zIndex: 0 }}>
           {displayImages.map((image, index) => (
             <div
               key={index}
-              className={`relative group cursor-pointer ${getImageSize(displayImages.length, index)}`}
+              className={`relative group cursor-pointer`}
               onClick={() => openModal(image)}
             >
-              <div className="image-preview w-full h-full bg-gray-800 rounded-md overflow-hidden flex items-center justify-center">
+              <div className="image-preview w-full h-full bg-gray-800 rounded-md overflow-hidden flex items-center justify-center" style={getItemStyle()}>
                 <img
-                  src={image}
+                  src={buildImageUrl(image)}
                   alt={`帖子图片 ${index + 1}`}
-                  className="optimized-image w-full h-full object-contain transition-transform group-hover:scale-105"
+                  className="optimized-image w-full h-full object-cover transition-transform group-hover:scale-105"
                   style={{ 
                     imageRendering: 'auto' as any,
                     backfaceVisibility: 'hidden',
@@ -88,12 +89,7 @@ const PostImageGallery: React.FC<PostImageGalleryProps> = ({
           ))}
         </div>
 
-        {/* Image Count Info - 固定高度 */}
-        {images.length > 3 && (
-          <p className="text-xs text-gray-400 text-center mt-1 flex-shrink-0">
-            共 {images.length} 张图片
-          </p>
-        )}
+        {/* 移除“共X张图片”提示，按需求不显示 */}
       </div>
 
       {/* Image Modal */}
@@ -104,7 +100,7 @@ const PostImageGallery: React.FC<PostImageGalleryProps> = ({
         >
           <div className="relative max-w-4xl max-h-full">
             <img
-              src={selectedImage}
+              src={buildImageUrl(selectedImage)}
               alt="放大查看"
               className="max-w-full max-h-full object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}

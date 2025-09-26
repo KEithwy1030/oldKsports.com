@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MessageSquare, Eye, Clock, Heart, Reply, Send, Smile, Image, Video, X } from 'lucide-react';
 import PageTransition from '../components/PageTransition';
@@ -32,6 +32,8 @@ const PostDetailPage: React.FC = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [toast, setToast] = useState<{visible: boolean; message: string; type: 'success' | 'error' | 'info' | 'points'}>({ visible: false, message: '', type: 'info' });
+  const replyBoxRef = useRef<HTMLDivElement | null>(null);
+  const [replyTarget, setReplyTarget] = useState<string | null>(null);
 
   // 加载帖子详情
   useEffect(() => {
@@ -143,6 +145,15 @@ const PostDetailPage: React.FC = () => {
     
     loadPost();
   }, [postId, getForumPosts, navigate, incrementPostViews]);
+
+  // 当打开回复框时，自动滚动到回复框位置，同时给出轻微的聚焦动画提示
+  useEffect(() => {
+    if (showReplyBox && replyBoxRef.current) {
+      try {
+        replyBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch {}
+    }
+  }, [showReplyBox]);
 
   // 获取用户头像
   const getUserAvatar = (username: string) => {
@@ -285,47 +296,108 @@ const PostDetailPage: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // 处理图片文件，转换为base64
+      // 处理图片文件：不再使用 base64，改为上传后使用返回的路径，避免 content 过长
       let replyData = replyContent;
+      
+      // 如果有回复目标，在内容前添加回复信息
+      if (replyTarget && replyTarget !== user.username) {
+        replyData = `回复 @${replyTarget}\n\n${replyData}`;
+      }
+      
       if (selectedFiles.length > 0) {
         const imageFiles = selectedFiles.filter(file => file.type.startsWith('image/'));
         if (imageFiles.length > 0) {
-          const imagePromises = imageFiles.map(file => {
-            return new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (e) => resolve(e.target?.result as string);
-              reader.readAsDataURL(file);
+          const formData = new FormData();
+          imageFiles.forEach(file => formData.append('images', file));
+          try {
+            const uploadRes = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/upload/images`, {
+              method: 'POST',
+              body: formData
             });
-          });
-          
-          const imageDataUrls = await Promise.all(imagePromises);
-          const imageHtml = imageDataUrls.map((dataUrl, index) => 
-            `<img src="${dataUrl}" alt="图片${index + 1}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0;" />`
-          ).join('');
-          
-          replyData = replyContent + (replyContent ? '<br/>' : '') + imageHtml;
+            const result = await uploadRes.json();
+            if (result?.success && Array.isArray(result.files)) {
+              const imagePaths: string[] = result.files.map((f: any) => f.path);
+              // 采用网格包裹，和发帖保持一致
+              const imageHtml = `\n<div class="post-images-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 16px 0;">\n${imagePaths.map((p: string, index: number) => `<img src="${p}" alt="回复图片 ${index + 1}" style="width: 100%; height: auto; border-radius: 8px; object-fit: contain;" class="post-image" />`).join('\n')}\n</div>`;
+              replyData = replyContent + (replyContent ? '\n\n' : '') + imageHtml;
+            } else {
+              // 兜底：如果上传失败，仍然把文字提交，避免阻塞
+              console.warn('图片上传失败，跳过图片，仅提交文字回复');
+            }
+          } catch (uploadErr) {
+            console.warn('图片上传异常，跳过图片，仅提交文字回复', uploadErr);
+          }
         }
       }
       
       // 优先使用后端API创建回复
       if (postId) {
-        await forumAPI.createReply(postId, replyData);
-        
-        // 奖励积分并检查等级
-        await updateUserPoints(POINTS_SYSTEM.REPLY_POST);
-        
-        // 重新加载帖子数据（以服务端数据为准）
-        const response = await forumAPI.getPostById(postId);
-      if (response.post) {
-        setPost(response.post);
-      } else {
-        // 如果API没有返回，回退到本地数据
-        const posts = await getForumPosts();
-        const updatedPost = posts.find((p: any) => String(p.id) === postId);
-        if (updatedPost) {
-          setPost(updatedPost);
+        try {
+          await forumAPI.createReply(postId, replyData);
+          
+          // 奖励积分并检查等级
+          await updateUserPoints(POINTS_SYSTEM.REPLY_POST);
+          
+          // 立即更新本地状态，确保用户看到新回复
+          const newReply = {
+            id: Date.now().toString(),
+            author: user.username,
+            author_id: user.id,
+            content: replyData,
+            likes: 0,
+            createdAt: new Date()
+          };
+          
+          setPost(prev => {
+            if (!prev) return prev;
+            const replies = Array.isArray(prev.replies) ? prev.replies : [];
+            return {
+              ...prev,
+              replies: [...replies, newReply]
+            };
+          });
+          
+          // 同时更新localStorage
+          try {
+            const raw = localStorage.getItem('oldksports_forum_posts');
+            const localPosts = raw ? JSON.parse(raw) : [];
+            const updatedPosts = localPosts.map((p: any) => {
+              if (String(p.id) === postId) {
+                const replies = Array.isArray(p.replies) ? p.replies : [];
+                return { ...p, replies: [...replies, newReply] };
+              }
+              return p;
+            });
+            localStorage.setItem('oldksports_forum_posts', JSON.stringify(updatedPosts));
+          } catch (localError) {
+            console.warn('Failed to update localStorage:', localError);
+          }
+          
+          // 尝试从后端获取最新数据（可选，用于同步）
+          try {
+            const response = await forumAPI.getPostById(postId);
+            if (response.post && Array.isArray(response.post.replies)) {
+              const normalizedPost = {
+                ...response.post,
+                replies: response.post.replies.map((r: any) => ({
+                  id: r.id,
+                  author: r.author,
+                  author_id: r.author_id ?? r.authorId,
+                  content: r.content,
+                  likes: r.likes ?? 0,
+                  createdAt: r.createdAt ?? r.created_at ?? r.created_at_time ?? r.date ?? null
+                }))
+              };
+              setPost(normalizedPost);
+            }
+          } catch (syncError) {
+            console.warn('Failed to sync with backend:', syncError);
+            // 继续使用本地数据
+          }
+        } catch (apiError) {
+          console.warn('API reply failed, using local fallback:', apiError);
+          throw apiError; // 让catch块处理本地回退
         }
-      }
       }
 
       // 浮窗提示积分增加
@@ -336,6 +408,7 @@ const PostDetailPage: React.FC = () => {
       setUploadProgress({});
       setUploadComplete({});
       setShowReplyBox(false);
+      setReplyTarget(null);
       
     } catch (error) {
       console.error('Failed to submit reply:', error as any);
@@ -466,8 +539,13 @@ const PostDetailPage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           {/* Post Content */}
           <div 
-            className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-6 cursor-pointer hover:bg-white/15 transition-all duration-200 hover:border-white/30 hover:shadow-lg"
-            onClick={() => setShowReplyBox(true)}
+            className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-6 transition-all duration-200 hover:border-white/30 hover:shadow-lg"
+            onClick={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.closest('.weibo-grid')) return;
+              setReplyTarget(post.author || null);
+              setShowReplyBox(true);
+            }}
           >
             {/* Author Info */}
             <div className="flex items-center space-x-3 mb-6">
@@ -500,9 +578,11 @@ const PostDetailPage: React.FC = () => {
                 />
               </div>
               <div>
-                <div className="font-semibold text-white">{post.author}</div>
-                <div className="flex items-center space-x-2 text-sm text-gray-400">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-white truncate max-w-[180px] md:max-w-[260px]">{post.author}</div>
                   <UserLevelComponent username={post.author} />
+                </div>
+                <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[12px] md:text-sm text-gray-400 mt-0.5">
                   <span className="flex items-center space-x-1">
                     <Clock size={14} />
                     <span>{formatTimeAgo(post.timestamp)}</span>
@@ -515,7 +595,7 @@ const PostDetailPage: React.FC = () => {
             <div className="prose prose-invert max-w-none mb-6">
               <PostContent 
                 content={post.content} 
-                className="text-gray-300"
+                className="post-content text-gray-300"
               />
             </div>
 
@@ -552,13 +632,24 @@ const PostDetailPage: React.FC = () => {
               </h2>
               
               {post.replies
+                .map((r: any) => ({
+                  ...r,
+                  author: r.author && r.author.trim() ? r.author : (r.author_id ? `用户#${r.author_id}` : '匿名用户'),
+                  createdAt: r.createdAt || r.created_at
+                }))
                 .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                 .map((reply: any) => {
                 return (
                   <div 
                     key={reply.id} 
-                    className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-6 cursor-pointer hover:bg-white/15 transition-all duration-200 hover:border-white/30 hover:shadow-lg"
-                    onClick={() => setShowReplyBox(true)}
+                    className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-6 transition-all duration-200 hover:border-white/30 hover:shadow-lg"
+                    onClick={(e) => {
+                      // 仅当点击非图片区域时才打开回复框
+                      const target = e.target as HTMLElement;
+                      if (target.closest('.weibo-grid')) return; // 图片网格区域，交给预览处理
+                      setReplyTarget(reply.author || null);
+                      setShowReplyBox(true);
+                    }}
                   >
                     {/* Reply Author */}
                     <div className="flex items-center space-x-3 mb-4">
@@ -594,7 +685,7 @@ const PostDetailPage: React.FC = () => {
                           <UserLevelComponent username={reply.author} />
                           <span className="flex items-center space-x-1">
                             <Clock size={12} />
-                            <span>{formatTimeAgo(reply.createdAt)}</span>
+                            <span>{formatTimeAgo(reply.createdAt || reply.created_at)}</span>
                           </span>
                         </div>
                       </div>
@@ -604,7 +695,7 @@ const PostDetailPage: React.FC = () => {
                     <div className="mb-4">
                       <PostContent 
                         content={reply.content} 
-                        className="text-gray-300 text-sm"
+                        className="reply-content text-gray-300 text-sm"
                       />
                     </div>
 
@@ -627,112 +718,58 @@ const PostDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Fixed Reply Box at Bottom */}
+      {/* Inline Reply Box (scrolls with content) */}
     {showReplyBox && (
-      <div 
-        style={{ 
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9999,
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          padding: '16px'
-        }}
+      <div
+        ref={replyBoxRef}
+        className="sticky bottom-0 bg-slate-800/95 backdrop-blur-sm border-t border-white/20 shadow-2xl rounded-t-xl"
       >
-        {/* Backdrop */}
-        <div 
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)'
-          }}
-          onClick={() => setShowReplyBox(false)}
-        />
-        
-        {/* Reply Box */}
-        <div style={{ position: 'relative', width: '100%', maxWidth: '672px', zIndex: 10 }}>
-          <div style={{
-            backgroundColor: '#1e293b',
-            borderRadius: '12px',
-            border: '1px solid rgba(255,255,255,0.2)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            padding: '24px'
-          }}>
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              <span>回复帖子</span>
+              {replyTarget && (
+                <span className="text-emerald-300 text-sm">@{replyTarget}</span>
+              )}
+            </h3>
+            <button
+              onClick={() => { setShowReplyBox(false); setReplyTarget(null); }}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         {user ? (
           <form onSubmit={handleReplySubmit} className="space-y-3">
             {/* Reply Editor */}
             <div className="relative">
               {/* Toolbar */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <div className="flex items-center gap-2 mb-3">
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  style={{
-                    padding: '12px',
-                    backgroundColor: 'rgba(255, 255, 0, 0.1)',
-                    borderRadius: '12px',
-                    border: 'none',
-                    color: '#fbbf24',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(255, 255, 0, 0.2)'}
-                  onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(255, 255, 0, 0.1)'}
+                  className="p-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded-lg transition-colors"
                   title="添加表情"
                 >
                   <Smile className="w-5 h-5" />
                 </button>
-                <label 
-                  style={{
-                    padding: '12px',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderRadius: '12px',
-                    border: 'none',
-                    color: '#60a5fa',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(59, 130, 246, 0.2)'}
-                  onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(59, 130, 246, 0.1)'}
-                  title="上传图片"
-                >
+                <label className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors cursor-pointer" title="上传图片">
                   <input
                     type="file"
                     accept="image/*,video/*"
                     multiple
                     onChange={handleFileSelect}
-                    style={{ display: 'none' }}
+                    className="hidden"
                   />
                   <Image className="w-5 h-5" />
                 </label>
-                <label 
-                  style={{
-                    padding: '12px',
-                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                    borderRadius: '12px',
-                    border: 'none',
-                    color: '#a78bfa',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(147, 51, 234, 0.2)'}
-                  onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(147, 51, 234, 0.1)'}
-                  title="上传视频"
-                >
+                <label className="p-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-colors cursor-pointer" title="上传视频">
                   <input
                     type="file"
                     accept="video/*"
                     multiple
                     onChange={handleFileSelect}
-                    style={{ display: 'none' }}
+                    className="hidden"
                   />
                   <Video className="w-5 h-5" />
                 </label>
@@ -740,20 +777,7 @@ const PostDetailPage: React.FC = () => {
 
               {/* Emoji Picker */}
               {showEmojiPicker && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: '100%',
-                  left: 0,
-                  marginBottom: '12px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 0, 0.3)',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  maxHeight: '192px',
-                  overflowY: 'auto',
-                  zIndex: 10,
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-                }}>
+                <div className="absolute bottom-full left-0 mb-3 bg-slate-700 border border-yellow-500/30 rounded-xl p-4 max-h-48 overflow-y-auto z-10 shadow-2xl">
                   <div className="grid grid-cols-8 gap-2">
                     {emojis.map((emoji, index) => (
                       <button
@@ -772,8 +796,8 @@ const PostDetailPage: React.FC = () => {
               {/* Textarea */}
               <textarea
                 placeholder="写下你的回复..."
-                className="w-full px-6 py-5 bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-slate-600/50 rounded-2xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 focus:bg-gradient-to-br focus:from-slate-600/70 focus:to-slate-700/70 resize-none transition-all duration-300 text-base shadow-inner"
-                rows={3}
+                className="w-full px-4 py-3 bg-slate-700/50 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none transition-colors"
+                rows={2}
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 required
@@ -900,7 +924,7 @@ const PostDetailPage: React.FC = () => {
             <div className="flex items-center justify-between pt-4">
               <button
                 type="button"
-                onClick={() => setShowReplyBox(false)}
+                onClick={() => { setShowReplyBox(false); setReplyTarget(null); }}
                 className="px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-slate-300 rounded-2xl transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-slate-500/25 hover:scale-105 font-medium"
               >
                 <span>取消</span>
@@ -926,11 +950,9 @@ const PostDetailPage: React.FC = () => {
             </button>
           </div>
         )}
-          </div>
         </div>
       </div>
     )}
-    </PageTransition>
 
     {/* Image Preview Modal */}
     {showImageModal && selectedImage && (
@@ -960,6 +982,7 @@ const PostDetailPage: React.FC = () => {
         </div>
       </div>
     )}
+    </PageTransition>
     </>
   );
 };

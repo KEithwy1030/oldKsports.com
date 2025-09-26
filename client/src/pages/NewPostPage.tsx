@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Send, ArrowLeft } from 'lucide-react';
 import { FORUM_CATEGORIES } from '../data/constants';
@@ -19,11 +19,35 @@ const NewPostPage: React.FC = () => {
     content: '',
     category: defaultCategory,
   });
+  const TITLE_MAX = 15;
+  const CONTENT_MAX = 200;
+  const titleLength = formData.title.length;
   const [images, setImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [titleError, setTitleError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // 规则：标题必须<=15字
+    if (formData.title.length === 0) {
+      setTitleError('标题不能为空');
+      return;
+    }
+    if (formData.title.length > TITLE_MAX) {
+      setTitleError(`标题过长（${formData.title.length}/${TITLE_MAX}），请缩短后再发布`);
+      return;
+    }
+    // 规则：正文必须<=200字（仅统计纯文本）
+    const plainText = (formData.content || '').replace(/<[^>]*>/g, '').trim();
+    if (plainText.length === 0) {
+      alert('❌ 帖子内容不能为空');
+      return;
+    }
+    if (plainText.length > CONTENT_MAX) {
+      alert('❌ 帖子内容不能超过200个字符');
+      return;
+    }
+    setTitleError(null);
     setIsSubmitting(true);
 
     try {
@@ -69,9 +93,18 @@ const NewPostPage: React.FC = () => {
         alert('✅ 帖子发布成功！');
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create post:', error);
-      alert('❌ 帖子发布失败，请重试');
+      let errorMessage = '帖子发布失败，请重试';
+      
+      // 检查错误消息
+      if (error?.message && error.message.includes('标题长度不能超过15个字符')) {
+        errorMessage = '标题长度不能超过15个字符';
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      alert(`❌ ${errorMessage}`);
     }
     
     setIsSubmitting(false);
@@ -91,10 +124,14 @@ const NewPostPage: React.FC = () => {
     }));
   };
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
+  // 避免在渲染期间调用导航导致的重复渲染
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   return (
     <PageTransition>
@@ -135,10 +172,17 @@ const NewPostPage: React.FC = () => {
                     name="title"
                     required
                     value={formData.title}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const v = e.target.value || '';
+                      setFormData(prev => ({ ...prev, title: v.slice(0, TITLE_MAX) }));
+                    }}
                     className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder-gray-400"
-                    placeholder="请输入帖子标题"
+                    placeholder="帖子标题 - 不超过15字符"
                   />
+                  <div className={`mt-1 text-xs ${titleLength > TITLE_MAX ? 'text-red-400' : 'text-gray-400'}`}>{titleLength}/{TITLE_MAX}</div>
+                  {titleError && (
+                    <div className="mt-1 text-xs text-red-400">{titleError}</div>
+                  )}
                 </div>
 
                 <div>
@@ -169,7 +213,7 @@ const NewPostPage: React.FC = () => {
                 <RichTextEditor
                   value={formData.content}
                   onChange={(content) => setFormData(prev => ({ ...prev, content }))}
-                  placeholder="请输入帖子内容..."
+                  placeholder="帖子内容 - 不超过200字符"
                   rows={12}
                 />
               </div>
@@ -266,7 +310,7 @@ const NewPostPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting || !formData.title || !formData.content}
+                    disabled={isSubmitting || !formData.title || !formData.content || formData.title.length > TITLE_MAX}
                     className="inline-flex items-center bg-emerald-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Send className="w-4 h-4 mr-2" />

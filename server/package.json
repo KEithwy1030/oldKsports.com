@@ -8,7 +8,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "admin:fix": "node fix-admin-account.js"
+    "admin:fix": "node fix-admin-account.js",
+    "postinstall": "echo 'Backend dependencies installed successfully'",
+    "production": "node start-production.js"
   },
   "keywords": ["sports", "forum", "community"],
   "author": "",

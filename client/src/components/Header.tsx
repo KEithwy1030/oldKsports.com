@@ -325,7 +325,7 @@ const Header: React.FC = () => {
                       <User size={16} />
                       <span>个人资料</span>
                     </Link>
-                    {user.roles?.includes('admin') && (
+                    {(user.isAdmin || user.roles?.includes('admin')) && (
                       <Link
                         to="/admin"
                         className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"

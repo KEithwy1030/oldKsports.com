@@ -1,21 +1,89 @@
-import React, { useState } from 'react';
-import { X, ZoomIn } from 'lucide-react';
-import '../styles/modal-fix.css';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
+import { buildImageUrl } from '../utils/imageUtils';
+import '../styles/weiboImageGrid.css';
 
-interface PostImageGridProps {
+type Props = {
   images: string[];
+  onImageClick?: (index: number) => void;
   className?: string;
-}
+};
 
-const PostImageGrid: React.FC<PostImageGridProps> = ({ images, className = '' }) => {
+const getLayout = (count: number) => {
+  if (count <= 1) return { columns: 1, variant: 'single' as const };
+  if (count === 2) return { columns: 2, variant: 'grid' as const };
+  if (count === 4) return { columns: 2, variant: 'grid' as const };
+  return { columns: 3, variant: 'grid' as const };
+};
+
+const PostImageGrid: React.FC<Props> = ({ images, onImageClick, className }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [validList, setValidList] = useState<string[]>([]);
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape' | 'square'>('landscape');
+
+  // 锁定页面滚动：预览时禁止背景滚动，关闭时恢复
+  useEffect(() => {
+    if (showModal) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+    return;
+  }, [showModal]);
+
+  // 预加载图片，过滤失效或加载失败的 src，避免出现空格子
+  React.useEffect(() => {
+    const urls = (Array.isArray(images) ? images : [])
+      .map(u => (typeof u === 'string' ? u : ''))
+      .filter(Boolean);
+    let cancelled = false;
+
+    const load = async () => {
+      const checks = await Promise.all(urls.map(src => new Promise<string | null>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(src);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      })));
+      if (!cancelled) {
+        setValidList(checks.filter((v): v is string => !!v));
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [images]);
+
+  const list = validList.slice(0, 9);
+  const overflow = validList.length > 9 ? validList.length - 9 : 0;
+  const { variant } = getLayout(list.length);
+
+  const detectOrientation = (src: string) => {
+    const img = new Image();
+    img.onload = () => {
+      const { naturalWidth: w, naturalHeight: h } = img;
+      if (!w || !h) return;
+      if (Math.abs(w - h) < 2) {
+        setOrientation('square');
+      } else if (w > h) {
+        setOrientation('landscape');
+      } else {
+        setOrientation('portrait');
+      }
+    };
+    img.src = src;
+  };
 
   const openModal = (image: string, index: number) => {
     setSelectedImage(image);
     setCurrentIndex(index);
     setShowModal(true);
+    onImageClick?.(index);
+    detectOrientation(image);
   };
 
   const closeModal = () => {
@@ -26,13 +94,17 @@ const PostImageGrid: React.FC<PostImageGridProps> = ({ images, className = '' })
   const nextImage = () => {
     const nextIndex = (currentIndex + 1) % images.length;
     setCurrentIndex(nextIndex);
-    setSelectedImage(images[nextIndex]);
+    const src = images[nextIndex];
+    setSelectedImage(src);
+    detectOrientation(src);
   };
 
   const prevImage = () => {
     const prevIndex = (currentIndex - 1 + images.length) % images.length;
     setCurrentIndex(prevIndex);
-    setSelectedImage(images[prevIndex]);
+    const src = images[prevIndex];
+    setSelectedImage(src);
+    detectOrientation(src);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -41,117 +113,127 @@ const PostImageGrid: React.FC<PostImageGridProps> = ({ images, className = '' })
     if (e.key === 'ArrowRight') nextImage();
   };
 
-  // 微博风格：最多显示9张图片
-  const displayImages = images.slice(0, 9);
-  const remainingCount = images.length - 9;
+  if (list.length === 0) return null;
 
-  // 根据图片数量确定网格布局
-  const getGridLayout = (count: number) => {
-    if (count === 1) return 'grid-cols-1';
-    if (count === 2) return 'grid-cols-2';
-    if (count <= 4) return 'grid-cols-2';
-    if (count <= 6) return 'grid-cols-3';
-    return 'grid-cols-3'; // 7-9张图片使用3x3布局
-  };
+  // 单图也裁成 1:1 方形缩略图
+  if (list.length === 1) {
+    return (
+      <>
+        <div className={`weibo-grid ${className}`} data-variant="grid" data-count="1" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="weibo-grid-item"
+            onClick={() => openModal(list[0], 0)}
+          >
+            <img src={buildImageUrl(list[0])} alt="post" loading="lazy" decoding="async" />
+          </div>
+        </div>
 
-  // 根据图片数量确定容器大小
-  const getContainerSize = (count: number) => {
-    if (count === 1) return 'max-w-xs'; // 单张图片较小
-    if (count <= 4) return 'max-w-md'; // 2-4张图片中等
-    return 'max-w-2xl'; // 5-9张图片较大
-  };
-
-  if (images.length === 0) return null;
+        {/* 图片放大模态框 */}
+        {showModal && selectedImage && createPortal(
+          <div 
+            className="weibo-image-modal"
+            style={{
+              position: 'fixed', left: 0, top: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+              zIndex: 2147483647
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              closeModal();
+            }}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+          >
+            <div className="weibo-modal-frame relative" data-orientation={orientation} style={{ zIndex: 2147483648 }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeModal();
+                }}
+                className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors z-10"
+              >
+                <X className="w-8 h-8" />
+              </button>
+              <img
+                src={buildImageUrl(selectedImage)}
+                alt={`帖子图片 ${currentIndex + 1}`}
+                className="max-w-full max-h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+      </>
+    );
+  }
 
   return (
     <>
-      <div className={`weibo-image-grid ${getContainerSize(displayImages.length)} ${className}`}>
-        <div className={`grid ${getGridLayout(displayImages.length)} gap-1`}>
-          {displayImages.map((image, index) => (
-            <div
-              key={index}
-              className="relative group cursor-pointer aspect-square bg-gray-800 rounded-sm overflow-hidden"
-              onClick={(e) => {
-                e.stopPropagation(); // 阻止事件冒泡
-                openModal(image, index);
-              }}
-            >
-              <img
-                src={image}
-                alt={`帖子图片 ${index + 1}`}
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                style={{ 
-                  imageRendering: 'auto' as any,
-                  backfaceVisibility: 'hidden',
-                  transform: 'translateZ(0)',
-                  willChange: 'transform'
-                }}
-                loading="lazy"
-                decoding="async"
-              />
-              
-              {/* 悬停效果 */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              
-              {/* 显示剩余数量 - 微博风格 */}
-              {index === displayImages.length - 1 && remainingCount > 0 && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <span className="text-white text-lg font-bold">
-                    +{remainingCount}
-                  </span>
-                </div>
-              )}
+      <div
+        className={`weibo-grid ${className}`}
+        data-variant={variant}
+        data-count={list.length}
+        role="list"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {list.map((src, idx) => {
+          const isLastAndMore = overflow > 0 && idx === list.length - 1;
+          return (
+          <div
+            key={idx}
+            className={`weibo-grid-item ${isLastAndMore ? 'weibo-grid-more' : ''}`}
+            {...(isLastAndMore ? { 'data-more': `+${overflow}` } : {})}
+            role="listitem"
+            onClick={(e) => { e.stopPropagation(); openModal(src, idx); }}
+          >
+              <img src={buildImageUrl(src)} alt={`img-${idx + 1}`} loading="lazy" decoding="async" />
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
       {/* 图片放大模态框 */}
-      {showModal && selectedImage && (
+      {showModal && selectedImage && createPortal(
         <div 
-          className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4"
+          className="weibo-image-modal"
+          style={{
+            position: 'fixed', left: 0, top: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+            zIndex: 2147483647
+          }}
           onClick={(e) => {
-            e.stopPropagation(); // 阻止事件冒泡
+            e.stopPropagation();
             closeModal();
           }}
           onKeyDown={handleKeyDown}
           tabIndex={0}
         >
-          <div className="relative max-w-7xl max-h-full">
-            {/* 关闭按钮 */}
+          <div className="weibo-modal-frame relative" data-orientation={orientation} style={{ zIndex: 2147483648 }}>
             <button
               onClick={(e) => {
-                e.stopPropagation(); // 阻止事件冒泡
+                e.stopPropagation();
                 closeModal();
               }}
               className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors z-10"
             >
               <X className="w-8 h-8" />
             </button>
-
-            {/* 图片容器 */}
             <div className="relative">
               <img
-                src={selectedImage}
+                src={buildImageUrl(selectedImage)}
                 alt={`帖子图片 ${currentIndex + 1}`}
-                className="max-w-full max-h-[80vh] object-contain"
-                style={{ 
-                  imageRendering: 'auto' as any,
-                  backfaceVisibility: 'hidden',
-                  transform: 'translateZ(0)',
-                  willChange: 'transform'
-                }}
+                className="max-w-full max-h-full object-contain"
+                style={{ position: 'relative', zIndex: 2147483649 }}
                 onClick={(e) => e.stopPropagation()}
               />
-
-              {/* 导航按钮 */}
               {images.length > 1 && (
                 <>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // 阻止事件冒泡
+                      e.stopPropagation();
                       prevImage();
                     }}
                     className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
@@ -162,7 +244,7 @@ const PostImageGrid: React.FC<PostImageGridProps> = ({ images, className = '' })
                   </button>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // 阻止事件冒泡
+                      e.stopPropagation();
                       nextImage();
                     }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
@@ -174,16 +256,13 @@ const PostImageGrid: React.FC<PostImageGridProps> = ({ images, className = '' })
                 </>
               )}
             </div>
-
-            {/* 图片计数器 */}
             {images.length > 1 && (
               <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-white text-sm">
                 {currentIndex + 1} / {images.length}
               </div>
             )}
           </div>
-        </div>
-      )}
+        </div>, document.body)}
     </>
   );
 };

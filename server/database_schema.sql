@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_admin BOOLEAN DEFAULT FALSE,
     avatar VARCHAR(255) DEFAULT NULL,
     has_uploaded_avatar BOOLEAN DEFAULT FALSE,
+    role VARCHAR(50) DEFAULT '用户', -- 身份：主播、甲方、服务商、用户等
+    roles JSON DEFAULT NULL, -- 多身份标签：["主播", "甲方", "服务商"]
     total_posts INT DEFAULT 0,
     total_replies INT DEFAULT 0,
     consecutive_checkins INT DEFAULT 0,

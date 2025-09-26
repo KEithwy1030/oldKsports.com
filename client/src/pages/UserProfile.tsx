@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { handleApiError } from '../utils/api';
-import { buildApiUrl } from '../config/api.config';
+import { buildApiUrl, getAuthHeaders } from '../config/api.config';
+import { clearUserCache } from '../components/UserHoverCard';
 import { Calendar, Trophy, MessageSquare, CreditCard, Star, CheckCircle, Briefcase, Settings, Shield, Camera, Upload, Crop, RotateCcw, Check, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserLevelBadge from '../components/UserLevelBadge';
 import { getPointsToNextLevel, getUserLevel } from '../utils/userUtils';
 import { POINTS_SYSTEM, INDUSTRY_ROLES, USER_LEVELS } from '../data/constants';
-// import ReactCrop, { Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
-// import 'react-image-crop/dist/ReactCrop.css';
+import ReactCrop, { Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import AvatarCropper from '../components/AvatarCropper';
 import BrowserCompatibleModal from '../components/BrowserCompatibleModal';
 import RealTimeAvatar from '../components/RealTimeAvatar';
 
@@ -92,12 +94,14 @@ const UserProfile: React.FC = () => {
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
   const [imageSrc, setImageSrc] = React.useState<string>('');
-  // 暂时注释掉crop功能，避免依赖问题
-  const [crop, setCrop] = React.useState<any>();
-  const [completedCrop, setCompletedCrop] = React.useState<any>();
+  const [crop, setCrop] = React.useState<CropType>();
+  const [completedCrop, setCompletedCrop] = React.useState<CropType>();
   const [imgRef, setImgRef] = React.useState<HTMLImageElement | null>(null);
   const [croppedImageUrl, setCroppedImageUrl] = React.useState<string>('');
   const [showCropper, setShowCropper] = React.useState(false);
+  const [showRoleEditor, setShowRoleEditor] = React.useState(false);
+  const [selectedRoles, setSelectedRoles] = React.useState<string[]>([]);
+  const [isSavingRoles, setIsSavingRoles] = React.useState(false);
   
   // 检测浏览器类型
   const isSogouBrowser = React.useMemo(() => {
@@ -110,6 +114,13 @@ const UserProfile: React.FC = () => {
       console.log('检测到搜狗浏览器，启用兼容性模式');
     }
   }, [isSogouBrowser]);
+
+  // 初始化selectedRoles
+  React.useEffect(() => {
+    if (user?.roles) {
+      setSelectedRoles(user.roles);
+    }
+  }, [user?.roles]);
   
   // 添加头像更新监听器
   const [avatarKey, setAvatarKey] = React.useState(Date.now());
@@ -354,6 +365,53 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  const handleSaveRoles = async () => {
+    if (!user) return;
+    
+    console.log('保存身份信息:', { selectedRoles, user: user.username });
+    
+    setIsSavingRoles(true);
+    try {
+      // 使用统一的API工具函数
+      const response = await fetch(buildApiUrl('/users/me'), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        credentials: 'include', // 确保包含cookies
+        body: JSON.stringify({
+          roles: selectedRoles
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('更新成功:', result);
+        
+        // 更新本地用户数据
+        const updatedUser = { ...user, roles: selectedRoles };
+        await updateUser(updatedUser);
+        
+        // 清除用户卡片缓存，确保新身份信息能正确显示
+        clearUserCache(user.username);
+        
+        setShowRoleEditor(false);
+        alert('身份信息更新成功！');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('更新失败详情:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(`更新失败: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('保存身份失败:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setIsSavingRoles(false);
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -390,22 +448,21 @@ const UserProfile: React.FC = () => {
     const displayWidth = width;
     const displayHeight = height;
     
-    // 暂时注释掉crop功能
-    // const crop = centerCrop(
-    //   makeAspectCrop(
-    //     {
-    //       unit: '%',
-    //       width: Math.min(80, (displayHeight / displayWidth) * 80),
-    //     },
-    //     1, // 1:1 aspect ratio for square
-    //     displayWidth,
-    //     displayHeight
-    //   ),
-    //   displayWidth,
-    //   displayHeight
-    // );
+    const crop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: Math.min(80, (displayHeight / displayWidth) * 80),
+        },
+        1, // 1:1 aspect ratio for square
+        displayWidth,
+        displayHeight
+      ),
+      displayWidth,
+      displayHeight
+    );
     
-    // setCrop(crop);
+    setCrop(crop);
   };
 
   const compressImage = (canvas: HTMLCanvasElement, quality: number = 0.8): string => {
@@ -603,27 +660,80 @@ const UserProfile: React.FC = () => {
               <p className="text-gray-300 mb-3">{user.email}</p>
               
               {/* User Roles */}
-              {user.roles && user.roles.length > 0 && (
-                <div className="mb-3">
-                  <div className="flex items-center space-x-1 mb-2">
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-1">
                     <Briefcase className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-400">行业身份</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {user.roles.map(roleId => {
-                      const role = INDUSTRY_ROLES.find(r => r.id === roleId);
-                      return role ? (
-                        <span
-                          key={roleId}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
-                        >
-                          {role.label}
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
+                  <button
+                    onClick={() => setShowRoleEditor(!showRoleEditor)}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    {showRoleEditor ? '取消' : '编辑'}
+                  </button>
                 </div>
-              )}
+                
+                {showRoleEditor ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      {INDUSTRY_ROLES.map(role => (
+                        <label key={role.id} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedRoles.includes(role.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRoles([...selectedRoles, role.id]);
+                              } else {
+                                setSelectedRoles(selectedRoles.filter(id => id !== role.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-emerald-600 bg-gray-700 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2"
+                          />
+                          <span className="text-sm text-gray-300">{role.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSaveRoles}
+                        disabled={isSavingRoles}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded transition-colors disabled:opacity-50"
+                      >
+                        {isSavingRoles ? '保存中...' : '保存'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowRoleEditor(false);
+                          setSelectedRoles(user.roles || []);
+                        }}
+                        className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {user.roles && user.roles.length > 0 ? (
+                      user.roles.map(roleId => {
+                        const role = INDUSTRY_ROLES.find(r => r.id === roleId);
+                        return role ? (
+                          <span
+                            key={roleId}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                          >
+                            {role.label}
+                          </span>
+                        ) : null;
+                      })
+                    ) : (
+                      <span className="text-sm text-gray-500">未设置身份</span>
+                    )}
+                  </div>
+                )}
+              </div>
               
               <div className="flex items-center space-x-6 text-sm text-gray-400">
                 <div className="flex items-center space-x-1">
@@ -634,6 +744,12 @@ const UserProfile: React.FC = () => {
                   <Trophy className="w-4 h-4" />
                   <span>{user.points} 积分</span>
                 </div>
+                {user.isAdmin && (
+                  <div className="flex items-center space-x-1 text-red-400">
+                    <Shield className="w-4 h-4" />
+                    <span>管理员</span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -797,18 +913,21 @@ const UserProfile: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="bg-black/50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                      <div className="flex justify-center overflow-auto">
-                        <div className="relative" style={{ minWidth: '300px', minHeight: '300px' }}>
-                          {/* 暂时注释掉ReactCrop组件 */}
-                          <img
-                            src={imageSrc}
-                            onLoad={onImageLoad}
-                            alt="裁剪图片"
-                            className="max-w-full h-auto object-contain"
-                            style={{ maxWidth: '600px', maxHeight: '500px' }}
-                          />
-                        </div>
+                    <div className="bg-black/50 rounded-lg p-4">
+                      <div className="flex justify-center">
+                        <AvatarCropper
+                          imageSrc={imageSrc}
+                          onReady={(img) => setImgRef(img)}
+                          onComplete={async (img, c) => {
+                            setCompletedCrop(c);
+                            try {
+                              const croppedUrl = await getCroppedImg(img, c);
+                              setCroppedImageUrl(croppedUrl);
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
+                        />
                       </div>
                     </div>
                     

@@ -198,7 +198,7 @@ const MerchantsPage: React.FC = () => {
                 displayMerchants.map((merchant, index) => (
               <div
                 key={merchant.id}
-                className={`bg-white/10 backdrop-blur-sm rounded-lg border overflow-hidden transition-all duration-300 ${
+                className={`bg-white/10 backdrop-blur-sm rounded-lg border overflow-hidden transition-all duration-300 flex flex-col ${
                   merchant.category === 'gold' 
                     ? 'border-orange-400/30 hover:border-orange-400' 
                     : merchant.category === 'advertiser' 
@@ -209,7 +209,7 @@ const MerchantsPage: React.FC = () => {
                 }`}
                 style={{ '--stagger-delay': `${7 + index}` } as React.CSSProperties}
               >
-                <div className="p-6">
+                <div className="p-6 flex-1">
                   <div className="flex items-start space-x-4">
                     {/* 使用系统头像根据商家分类显示不同角色 */}
                     {getSystemAvatar(merchant.category, "w-16 h-16")}
@@ -231,7 +231,7 @@ const MerchantsPage: React.FC = () => {
                     
                     <div className="text-sm text-gray-300">
                       <span className="font-medium text-white">联系方式：</span>
-                      {merchant.contactInfo}
+                      { (merchant as any).contact_info || (merchant as any).contactInfo || '—' }
                     </div>
                     
                     {merchant.website && (
@@ -287,12 +287,8 @@ const MerchantsPage: React.FC = () => {
                   const categoryInfo = getCategoryInfo();
                   
                   return (
-                    <div className={`${categoryInfo.bgColor} px-6 py-3 border-t ${categoryInfo.borderColor}`}>
-                      <div className="flex items-center justify-center">
-                        <span className={`${categoryInfo.textColor} text-sm font-medium`}>
-                          {categoryInfo.label}
-                        </span>
-                      </div>
+                    <div className={`${categoryInfo.bgColor} ${categoryInfo.borderColor} border-t min-h-[48px] flex items-center justify-center rounded-b-lg`}> 
+                      <span className={`${categoryInfo.textColor} text-sm font-medium`}>{categoryInfo.label}</span>
                     </div>
                   );
                 })()}

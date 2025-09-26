@@ -11,11 +11,30 @@ export default defineConfig(({ mode }) => {
       strictPort: true, // 端口被占用时直接报错
       proxy: {
         '/api': {
-          target: `http://localhost:3001`, // 指向后端服务器
+          target: `http://localhost:8080`, // 指向后端服务器（统一为8080）
           changeOrigin: true,
           // 不重写路径，保持 /api 前缀
         },
       },
     },
+    preview: {
+      port: 5173,
+      host: '0.0.0.0',
+      strictPort: true
+    },
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      sourcemap: false,
+      minify: 'terser',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            router: ['react-router-dom']
+          }
+        }
+      }
+    }
   };
 });

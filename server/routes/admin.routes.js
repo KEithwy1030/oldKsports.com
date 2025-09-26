@@ -32,19 +32,38 @@ const dbQuery = (sql, params = []) => {
   });
 };
 
-// 管理员仪表板统计
+// 管理员仪表板统计（全部真实数据）
 router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const [userStats] = await dbQuery('SELECT COUNT(*) as total_users FROM users');
-    const [postStats] = await dbQuery('SELECT COUNT(*) as total_posts FROM forum_posts');
-    const [replyStats] = await dbQuery('SELECT COUNT(*) as total_replies FROM forum_replies');
-    
+    // 总量统计
+    const userStats = await dbQuery('SELECT COUNT(*) as total_users FROM users');
+    const postStats = await dbQuery('SELECT COUNT(*) as total_posts FROM forum_posts');
+    const replyStats = await dbQuery('SELECT COUNT(*) as total_replies FROM forum_replies');
+
+    // 今日新增统计
+    const todayPosts = await dbQuery("SELECT COUNT(*) as today_posts FROM forum_posts WHERE DATE(created_at) = CURDATE()");
+    const todayReplies = await dbQuery("SELECT COUNT(*) as today_replies FROM forum_replies WHERE DATE(created_at) = CURDATE()");
+
+    // 在线用户（近10分钟有登录或活跃）
+    const onlineUsersRows = await dbQuery(
+      `SELECT COUNT(*) AS online_users
+       FROM users 
+       WHERE last_login IS NOT NULL AND TIMESTAMPDIFF(MINUTE, last_login, NOW()) <= 10`
+    );
+    const onlineUsers = onlineUsersRows?.[0]?.online_users || 0;
+
     res.json({
       success: true,
       data: {
-        totalUsers: userStats[0].total_users,
-        totalPosts: postStats[0].total_posts,
-        totalReplies: replyStats[0].total_replies
+        totalUsers: (userStats?.[0]?.total_users) || 0,
+        totalPosts: (postStats?.[0]?.total_posts) || 0,
+        totalReplies: (replyStats?.[0]?.total_replies) || 0,
+        onlineUsers,
+        todayPosts: (todayPosts?.[0]?.today_posts) || 0,
+        todayReplies: (todayReplies?.[0]?.today_replies) || 0,
+        // 预留增长数据结构，前端做了 length 判断
+        userGrowth: [],
+        postGrowth: []
       }
     });
   } catch (error) {
@@ -74,27 +93,50 @@ router.get('/dashboard/activity', authenticateToken, requireAdmin, async (req, r
   }
 });
 
-// 系统状态检查
+// 系统状态检查（前端期望包含 server/database/storage 三段）
 router.get('/system/status', authenticateToken, requireAdmin, async (req, res) => {
   try {
     // 检查数据库连接
     await dbQuery('SELECT 1 as health_check');
-    
+
+    // 服务器状态（进程与时间）
+    const serverStatus = { status: 'normal', message: 'Server is running', uptimeSec: Math.floor(process.uptime()) };
+
+    // 存储使用（统计 uploads 目录体积，作为简化指标）
+    const uploadsRoot = path.join(process.cwd(), 'public', 'uploads', 'images');
+    let totalBytes = 0;
+    try {
+      if (fs.existsSync(uploadsRoot)) {
+        const files = fs.readdirSync(uploadsRoot);
+        for (const f of files) {
+          const fp = path.join(uploadsRoot, f);
+          const stat = fs.statSync(fp);
+          if (stat.isFile()) totalBytes += stat.size;
+        }
+      }
+    } catch (_) { /* ignore */ }
+    // 以 2GB 为参考容量估算占用百分比，避免读取磁盘分区信息带来跨平台差异
+    const referenceCapacity = 2 * 1024 * 1024 * 1024; // 2GB
+    const usage = Math.min(100, Math.round((totalBytes / referenceCapacity) * 100));
+    const storageStatus = { status: 'normal', usage, message: 'Uploads OK' };
+
     res.json({
       success: true,
       data: {
-        database: 'connected',
-        timestamp: new Date().toISOString()
+        server: serverStatus,
+        database: { status: 'normal', message: 'Database connected' },
+        storage: storageStatus
       }
     });
   } catch (error) {
     console.error('系统状态检查失败:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: '系统状态检查失败',
       data: {
-        database: 'disconnected',
-        timestamp: new Date().toISOString()
+        server: { status: 'degraded', message: 'Server error' },
+        database: { status: 'error', message: 'Database disconnected' },
+        storage: { status: 'unknown', usage: 0, message: 'Unknown' }
       }
     });
   }

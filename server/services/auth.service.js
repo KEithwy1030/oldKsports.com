@@ -41,10 +41,11 @@ export const findUserByResetToken = (resetToken) => {
     });
 };
 
-export const createUser = (username, email, passwordHash) => {
+export const createUser = (username, email, passwordHash, roles = null) => {
     return new Promise((resolve, reject) => {
-        const q = "INSERT INTO users(username, email, password) VALUES (?, ?, ?)";
-        getDb().query(q, [username, email, passwordHash], (err, data) => {
+        const q = "INSERT INTO users(username, email, password, roles) VALUES (?, ?, ?, ?)";
+        const rolesJson = roles ? JSON.stringify(roles) : null;
+        getDb().query(q, [username, email, passwordHash, rolesJson], (err, data) => {
             if (err) return reject(err);
             resolve("User has been created.");
         });

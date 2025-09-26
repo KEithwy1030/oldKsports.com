@@ -14,7 +14,8 @@ import ClickableUserAvatar from '../components/ClickableUserAvatar';
 import UserLevelComponent from '../components/UserLevel';
 import PostImageGallery from '../components/PostImageGallery';
 import TokenCleaner from '../components/TokenCleaner';
-import { compressImages, validateImageFile } from '../utils/imageUtils';
+import HtmlContent from '../components/HtmlContent';
+import { compressImages, validateImageFile, buildImageUrl, fixImageUrlsInContent } from '../utils/imageUtils';
 import { tokenSync } from '../utils/tokenSync';
 
 const ForumPage: React.FC = () => {
@@ -52,11 +53,7 @@ const ForumPage: React.FC = () => {
     const images: string[] = [];
     let match;
     while ((match = imgRegex.exec(content)) !== null) {
-      let imageUrl = match[1];
-      // 确保使用标准端口3001
-      if (imageUrl.includes('localhost:5174')) {
-        imageUrl = imageUrl.replace('localhost:5174', import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001');
-      }
+      const imageUrl = buildImageUrl(match[1]);
       images.push(imageUrl);
     }
     return images;
@@ -67,11 +64,8 @@ const ForumPage: React.FC = () => {
     const gridRegex = /<div class="post-images-grid"[^>]*>([\s\S]*?)<\/div>/g;
     const match = gridRegex.exec(content);
     let gridContent = match ? match[1] : '';
-    // 确保使用标准端口3001
-    if (gridContent.includes('localhost:5174')) {
-      gridContent = gridContent.replace(/localhost:5174/g, import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001');
-    }
-    return gridContent;
+    // 修复网格内容中的图片URL
+    return fixImageUrlsInContent(gridContent);
   };
 
   // 获取纯文本内容
@@ -92,14 +86,68 @@ const ForumPage: React.FC = () => {
     return post.timestamp || post.created_at || post.createdAt || post.date;
   }, []);
 
+  // 统一获取回复数量（适配不同数据形态/兼容本地缓存）
+  const getRepliesCount = useCallback((post: any): number => {
+    const toNum = (v: any) => {
+      const n = typeof v === 'string' ? parseInt(v, 10) : v;
+      return Number.isFinite(n) ? n as number : 0;
+    };
+    try {
+      // 1) 优先使用后端API返回的reply_count字段
+      if (typeof post?.reply_count === 'number') return post.reply_count;
+      if (typeof post?.replyCount === 'number') return post.replyCount;
+
+      // 2) 常规数组字段
+      if (Array.isArray(post?.replies)) return post.replies.length;
+      if (Array.isArray(post?.comments)) return post.comments.length;
+
+      // 3) 其他可能的计数字段（兼容不同命名）
+      const candidates = [
+        post?.repliesCount,
+        post?.commentsCount,
+        post?.commentCount,
+        post?.totalReplies,
+        post?.meta?.replies,
+        post?.meta?.replyCount,
+        post?.stats?.replies
+      ];
+      for (const c of candidates) {
+        const n = toNum(c);
+        if (n > 0) return n;
+      }
+
+      // 4) 本地缓存兜底（可能包含最新回复）
+      const raw = localStorage.getItem('oldksports_forum_posts');
+      if (raw) {
+        const cached = JSON.parse(raw);
+        const found = cached?.find((p: any) => String(p.id) === String(post.id));
+        if (found) {
+          if (Array.isArray(found.replies)) return found.replies.length;
+          if (Array.isArray(found.comments)) return found.comments.length;
+          const n = toNum(found?.reply_count || found?.repliesCount || found?.replyCount || found?.commentsCount);
+          if (n > 0) return n;
+        }
+      }
+    } catch (error) {
+      console.error('getRepliesCount 错误:', error);
+    }
+    return 0;
+  }, []);
+
   const handleSubforumClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
     setSearchTerm('');
+    // 同步更新发帖表单的分类选择
+    if (categoryId !== 'all') {
+      setNewPost(prev => ({ ...prev, category: categoryId }));
+    }
   };
 
   const handleBackToMain = (): void => {
     setSelectedCategory('all'); // 返回显示全部帖子
     setSearchTerm('');
+    // 重置发帖表单分类为默认值
+    setNewPost(prev => ({ ...prev, category: 'general' }));
   };
 
   // 管理员删除帖子功能
@@ -308,7 +356,7 @@ const ForumPage: React.FC = () => {
         const imageHtml = `
           <div class="post-images-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 16px 0;">
             ${newPostImages.map((imagePath, index) => 
-              `<img src="${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'}${imagePath}" alt="帖子图片 ${index + 1}" style="width: 100%; height: auto; border-radius: 8px; object-fit: contain;" class="post-image" />`
+              `<img src="${buildImageUrl(imagePath)}" alt="帖子图片 ${index + 1}" style="width: 100%; height: auto; border-radius: 8px; object-fit: contain;" class="post-image" />`
             ).join('')}
           </div>
         `;
@@ -357,7 +405,14 @@ const ForumPage: React.FC = () => {
         setShowTokenCleaner(true);
         setToast({ visible: true, message: '登录已过期，请重新登录', type: 'error' });
       } else {
-        setToast({ visible: true, message: '发帖失败，请重试', type: 'error' });
+        // 检查是否是标题长度错误
+        let errorMessage = '发帖失败，请重试';
+        if (error?.message && error.message.includes('标题长度不能超过15个字符')) {
+          errorMessage = '标题长度不能超过15个字符';
+        } else if (error?.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+        setToast({ visible: true, message: errorMessage, type: 'error' });
       }
     }
   };
@@ -448,14 +503,14 @@ const ForumPage: React.FC = () => {
                 <h2 className="text-xl font-semibold text-white mb-4">发布新帖</h2>
                 <form onSubmit={handleNewPostSubmit}>
                   <div className="space-y-4">
-                    <div><input type="text" placeholder="帖子标题" className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" value={newPost.title} onChange={(e) => setNewPost({ ...newPost, title: e.target.value })} required /></div>
+                    <div><input type="text" placeholder="帖子标题 - 不超过15字符" className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" value={newPost.title} onChange={(e) => setNewPost({ ...newPost, title: e.target.value.slice(0, 15) })} required /></div>
                     <div>
                       <select className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" value={newPost.category} onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}>
                         {categories.map(category => (<option key={category.id} value={category.id}>{category.name}</option>))}
                       </select>
                       <p className="text-sm text-emerald-400 mt-2">在 {categories.find(c => c.id === newPost.category)?.name} 中发帖</p>
                     </div>
-                    <div><textarea placeholder="帖子内容" rows={6} className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" value={newPost.content} onChange={(e) => setNewPost({ ...newPost, content: e.target.value })} required /></div>
+                    <div><textarea placeholder="帖子内容 - 不超过200字符" rows={6} className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" value={newPost.content} onChange={(e) => setNewPost({ ...newPost, content: e.target.value.slice(0, 200) })} required /></div>
                     
                     {/* 图片上传功能 */}
                     <div className="bg-white/5 rounded-lg p-3 border border-white/10">
@@ -540,7 +595,7 @@ const ForumPage: React.FC = () => {
                           {newPostImages.map((imagePath, index) => (
                             <div key={index} className="relative">
                               <img
-                                src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'}${imagePath}`}
+                                src={buildImageUrl(imagePath)}
                                 alt={`上传的图片 ${index + 1}`}
                                 className="w-full h-16 object-cover rounded-md border border-white/20"
                               />
@@ -640,7 +695,7 @@ const ForumPage: React.FC = () => {
                               </div>
                               <div className="text-center w-full">
                                 <div className="font-semibold text-white text-sm mb-1 truncate">{post.author}</div>
-                                <div className="w-full">
+                                <div className="w-full flex items-center justify-center">
                                   <UserLevelComponent username={post.author} />
                                 </div>
                               </div>
@@ -666,7 +721,7 @@ const ForumPage: React.FC = () => {
                               {/* 可点击的内容区域 */}
                               <Link 
                                 to={`/forum/post/${String(post.id)}`} 
-                                className="flex-1 flex flex-col hover:bg-white/5 rounded-lg p-2 -m-2 ml-4 transition-colors"
+                                className="flex-1 flex flex-col hover:bg-white/5 rounded-lg p-2 -m-2 ml-4 transition-colors relative"
                               >
                                 <div className="flex items-start justify-between mb-2 pr-8">
                                   <div className="flex items-center space-x-2">
@@ -674,7 +729,7 @@ const ForumPage: React.FC = () => {
                                       {categories.find(c => c.id === post.category)?.name || post.category}
                                     </span>
                                   </div>
-                                  <div className="flex items-center space-x-2 text-xs text-gray-400">
+                                <div className="flex items-center space-x-2 text-xs text-gray-400 relative z-[1]">
                                     <div className="flex items-center space-x-1">
                                       <Clock size={12} />
                                       <span>{formatTimeAgo(getPostTimestamp(post))}</span>
@@ -691,15 +746,15 @@ const ForumPage: React.FC = () => {
                                 <h3 className="text-base font-semibold text-white mb-2 hover:text-emerald-400 transition-colors line-clamp-1 pr-8">{post.title}</h3>
                                 
                                 {/* 内容区域 - 微调方案：统一高度，内容差异化 */}
-                                <div className="flex-1 flex flex-col">
+                                <div className="flex-1 flex flex-col relative z-[0]">
                                   {(() => {
                                     const images = extractImagesFromContent(post.content);
                                     const textContent = getTextContent(post.content);
                                     
                                     if (images.length > 0) {
-                                      // 有图片的帖子：只显示图片，不显示文字描述
+                                      // 有图片的帖子：仅渲染图片区域
                                       return (
-                                        <div className="flex-1">
+                                        <div className="w-full flex justify-center" style={{ marginTop: -6 }}>
                                           <PostImageGallery 
                                             images={images} 
                                             maxPreviewImages={3}
@@ -708,12 +763,13 @@ const ForumPage: React.FC = () => {
                                         </div>
                                       );
                                     } else {
-                                      // 无图片的帖子：显示文本摘要（紧凑样式）
+                                      // 无图片的帖子：显示HTML内容预览（紧凑样式）
                                       return (
                                         <div className="flex-1 flex flex-col justify-center py-1">
-                                          <p className="text-gray-300 text-sm leading-snug line-clamp-4">
-                                            {textContent.length > 250 ? `${textContent.substring(0, 250)}...` : textContent || '点击查看详情'}
-                                          </p>
+                                          <HtmlContent 
+                                            content={post.content} 
+                                            className="post-preview text-gray-300 text-sm leading-snug line-clamp-4"
+                                          />
                                           {textContent.length > 250 && (
                                             <p className="text-emerald-400 text-xs mt-1">点击查看完整内容</p>
                                           )}
@@ -722,14 +778,10 @@ const ForumPage: React.FC = () => {
                                     }
                                   })()}
                                 </div>
-                                
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-3 text-xs text-gray-400">
-                                    <div className="flex items-center space-x-1">
-                                      <Reply size={12} />
-                                      <span>{post.replies?.length || 0} 回复</span>
-                                    </div>
-                                  </div>
+                                {/* 统一的“x回复”徽标：固定在内容区域左侧的统一位置 */}
+                                <div className="absolute z-[2] inline-flex items-center space-x-1 text-xs text-gray-400" style={{ top: '100px', right: '40px' }}>
+                                  <Reply size={12} />
+                                  <span>{getRepliesCount(post)} 回复</span>
                                 </div>
                               </Link>
                             </div>

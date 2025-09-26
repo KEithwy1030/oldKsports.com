@@ -1,151 +1,234 @@
-/* 微博风格图片网格样式 */
-.weibo-image-grid {
-  /* 容器样式 */
-  margin: 16px 0;
-  display: inline-block;
+/* 微博式图片九宫格样式 */
+.weibo-grid {
+  display: grid !important;
+  grid-auto-flow: row dense !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 4px; /* 移动端紧凑 */
+  grid-row-gap: 4px;
+  grid-column-gap: 4px;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-.weibo-image-grid .grid {
-  /* 网格布局 */
-  display: grid;
-  gap: 2px; /* 微博风格的紧密间距 */
+@media (min-width: 640px) {
+  .weibo-grid {
+    gap: 6px;
+    grid-row-gap: 6px;
+    grid-column-gap: 6px;
+  }
 }
 
-/* 响应式网格布局 */
-.weibo-image-grid .grid-cols-1 {
-  grid-template-columns: 1fr;
+@media (min-width: 1024px) {
+  .weibo-grid {
+    gap: 8px;
+    grid-row-gap: 8px;
+    grid-column-gap: 8px;
+  }
 }
 
-.weibo-image-grid .grid-cols-2 {
+/* 布局规则 */
+[data-variant="grid"][data-count="2"] {
   grid-template-columns: repeat(2, 1fr);
 }
 
-.weibo-image-grid .grid-cols-3 {
-  grid-template-columns: repeat(3, 1fr);
+[data-variant="grid"][data-count="4"] {
+  grid-template-columns: repeat(2, 1fr);
 }
 
-/* 图片容器样式 */
-.weibo-image-grid .aspect-square {
-  aspect-ratio: 1 / 1;
-  position: relative;
-  overflow: hidden;
-  border-radius: 4px; /* 微博风格的圆角 */
+[data-variant="grid"]:not([data-count="2"]):not([data-count="4"]) {
+  grid-template-columns: repeat(3, 1fr); /* 三列严格对齐 */
 }
 
-/* 图片样式 */
-.weibo-image-grid img {
+/* 单图样式 */
+.weibo-single {
   width: 100%;
-  height: 100%;
-  object-fit: cover; /* 微博风格：裁剪填充 */
+}
+
+.weibo-single img {
+  width: 100%;
+  height: auto;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 12px;
+  cursor: pointer;
   transition: transform 0.2s ease;
 }
 
-/* 悬停效果 */
-.weibo-image-grid .group:hover img {
-  transform: scale(1.05);
+.weibo-single img:hover {
+  transform: scale(1.02);
 }
 
-/* 放大镜图标 */
-.weibo-image-grid .group:hover .opacity-0 {
-  opacity: 1;
+/* 网格项样式 */
+.weibo-grid-item {
+  position: relative;
+  width: 100%;
+  /* 使用 padding-bottom 技术，确保任何环境下都是正方形 */
+  height: 0;
+  padding-bottom: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  /* 调试可视化：取消透明，显示方框 */
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
-/* 数量显示样式 */
-.weibo-image-grid .absolute.inset-0.bg-black\/60 {
-  background-color: rgba(0, 0, 0, 0.6);
+.weibo-grid-item:hover { transform: scale(1.02); }
+
+.weibo-grid-item > img {
+  position: absolute !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important; /* 去除基线空隙 */
+  object-fit: cover !important; /* 居中裁切撑满正方形 */
+  object-position: center center !important;
+  margin: 0 !important; /* 覆盖 .post-content img 全局外边距，避免出现上方空白 */
+  transform: translateZ(0);
+}
+
+/* 作用域覆盖：清零九宫格外部 margin/padding，避免被 prose 等样式撑开 */
+.post-content .weibo-grid,
+.reply-content .weibo-grid {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.post-content .weibo-grid-item,
+.reply-content .weibo-grid-item { margin: 0 !important; }
+
+/* +N 角标样式 */
+.weibo-grid-more::after {
+  content: attr(data-more);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 8px;
 }
 
-.weibo-image-grid .text-white.text-lg.font-bold {
-  color: white;
-  font-size: 1.125rem;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+/* 深色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .weibo-grid-item { background: rgba(255, 255, 255, 0.06); }
+}
+
+/* 响应式优化 */
+@media (max-width: 640px) {
+  .weibo-grid-item {
+    border-radius: 6px;
+  }
+  
+  .weibo-single img {
+    border-radius: 8px;
+  }
 }
 
 /* 模态框样式 */
-.weibo-image-grid .fixed.inset-0 {
+/* 新的预览层类名，确保覆盖一切 */
+.weibo-image-modal {
   position: fixed !important;
   top: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
   left: 0 !important;
-  background-color: rgba(0, 0, 0, 0.9);
-  z-index: 9999 !important;
+  background-color: rgba(0, 0, 0, 0.6) !important; /* 降低遮罩深度 */
+  z-index: 2147483647 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 1rem;
+  padding: 1rem !important;
+}
+
+/* 预览方框容器：限制图片最大显示区域 */
+.weibo-modal-frame {
+  max-width: 33vw !important; /* 默认：宽度的1/3 */
+  max-height: 33vh !important; /* 默认：高度的1/3 */
+  background: rgba(0, 0, 0, 0.85) !important; /* 方框内部略深，突出图片 */
+  border-radius: 12px !important;
+  padding: 12px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 横图：稍放宽宽度限制，保持高度更紧凑 */
+.weibo-modal-frame[data-orientation="landscape"] {
+  max-width: 45vw !important;
+  max-height: 30vh !important;
+}
+
+/* 竖图：放宽高度限制，避免过小；宽度保持较小 */
+.weibo-modal-frame[data-orientation="portrait"] {
+  max-width: 28vw !important;
+  max-height: 60vh !important;
+}
+
+/* 正方形：中庸尺寸 */
+.weibo-modal-frame[data-orientation="square"] {
+  max-width: 36vw !important;
+  max-height: 36vh !important;
 }
 
 /* 模态框图片 */
-.weibo-image-grid .max-w-full.max-h-\[80vh\] {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
+.weibo-image-modal img {
+  max-width: 100% !important;
+  max-height: 100% !important; /* 由方框控制总体尺寸 */
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  z-index: 2147483648 !important;
 }
 
 /* 导航按钮 */
-.weibo-image-grid .absolute.left-4,
-.weibo-image-grid .absolute.right-4 {
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  padding: 0.5rem;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
+.weibo-image-modal .absolute.left-4,
+.weibo-image-modal .absolute.right-4 {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  color: white !important;
+  padding: 0.5rem !important;
+  border-radius: 50% !important;
+  transition: background-color 0.2s ease !important;
+  z-index: 2147483649 !important;
 }
 
-.weibo-image-grid .absolute.left-4:hover,
-.weibo-image-grid .absolute.right-4:hover {
-  background-color: rgba(0, 0, 0, 0.7);
+.weibo-image-modal .absolute.left-4:hover,
+.weibo-image-modal .absolute.right-4:hover {
+  background-color: rgba(0, 0, 0, 0.7) !important;
 }
 
 /* 关闭按钮 */
-.weibo-image-grid .absolute.-top-12 {
-  position: absolute;
-  top: -3rem;
-  right: 0;
-  color: white;
-  transition: color 0.2s ease;
+.weibo-image-modal .absolute.-top-12 {
+  position: absolute !important;
+  top: -3rem !important;
+  right: 0 !important;
+  color: white !important;
+  transition: color 0.2s ease !important;
+  z-index: 2147483649 !important;
 }
 
-.weibo-image-grid .absolute.-top-12:hover {
-  color: #d1d5db;
+.weibo-image-modal .absolute.-top-12:hover {
+  color: #d1d5db !important;
 }
 
 /* 图片计数器 */
-.weibo-image-grid .absolute.-bottom-12 {
-  position: absolute;
-  bottom: -3rem;
-  left: 50%;
-  transform: translateX(-50%);
-  color: white;
-  font-size: 0.875rem;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .weibo-image-grid {
-    margin: 12px 0;
-  }
-  
-  .weibo-image-grid .grid {
-    gap: 1px; /* 移动端更紧密 */
-  }
-  
-  .weibo-image-grid .aspect-square {
-    border-radius: 2px;
-  }
-}
-
-@media (max-width: 480px) {
-  .weibo-image-grid {
-    margin: 8px 0;
-  }
-  
-  .weibo-image-grid .text-white.text-lg.font-bold {
-    font-size: 1rem;
-  }
+.weibo-image-modal .absolute.-bottom-12 {
+  position: absolute !important;
+  bottom: -3rem !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  color: white !important;
+  font-size: 0.875rem !important;
+  z-index: 2147483649 !important;
 }

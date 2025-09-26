@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { showUserCard, hideUserCard } from '../components/UserHoverCard';
 import { 
   Users, 
   Bot, 
@@ -402,7 +403,22 @@ const AdminPage: React.FC = () => {
                       <tr key={user.id} className="hover:bg-white/5">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-emerald-600/20 rounded-full flex items-center justify-center border border-emerald-500/30">
+                            <div 
+                              className="w-10 h-10 bg-emerald-600/20 rounded-full flex items-center justify-center border border-emerald-500/30 cursor-pointer"
+                              onMouseOver={(e) => {
+                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                (e.currentTarget as any).__hoverTimer = setTimeout(() => {
+                                  showUserCard(user.username, rect);
+                                }, 500);
+                              }}
+                              onMouseOut={(e) => {
+                                if ((e.currentTarget as any).__hoverTimer) {
+                                  clearTimeout((e.currentTarget as any).__hoverTimer);
+                                  (e.currentTarget as any).__hoverTimer = null;
+                                }
+                                hideUserCard(120);
+                              }}
+                            >
                               {user.hasUploadedAvatar && user.avatar ? (
                                 <img 
                                   src={user.avatar} 

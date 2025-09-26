@@ -23,6 +23,9 @@ export const addUserLevel = (user) => {
   
   return {
     ...user,
-    level: getUserLevel(user.points)
+    level: getUserLevel(user.points),
+    // 确保字段映射正确
+    isAdmin: user.is_admin || user.isAdmin || false,
+    joinDate: user.created_at || user.joinDate
   };
 };

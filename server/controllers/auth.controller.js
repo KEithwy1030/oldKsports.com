@@ -11,8 +11,8 @@ dotenv.config();
 
 export const register = async (req, res) => {
     try {
-        console.log('Register request received:', { username: req.body.username, email: req.body.email });
-        const { username, email, password } = req.body;
+        console.log('Register request received:', { username: req.body.username, email: req.body.email, roles: req.body.roles });
+        const { username, email, password, roles } = req.body;
         
         // Validate required fields
         if (!username || !email || !password) {
@@ -43,8 +43,8 @@ export const register = async (req, res) => {
         const salt = bcrypt.genSaltSync(10);
         const hash = bcrypt.hashSync(password, salt);
         
-        // Create user with email
-        await createUser(username, email, hash);
+        // Create user with email and roles
+        await createUser(username, email, hash, roles);
         
         // 获取新创建用户的ID
         const newUsers = await findUserByUsername(username);

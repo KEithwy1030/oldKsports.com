@@ -25,11 +25,16 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ChatWidget from './components/ChatWidget';
+import ChatHandlerSetup from './components/ChatHandlerSetup';
+import { initUserHoverAutobind } from './components/UserHoverCard';
 
 function App() {
+  // 兜底自动绑定：让任意带 data-username/data-user 的元素都能触发用户卡片
+  try { initUserHoverAutobind(); } catch {}
   return (
     <AuthProvider>
       <ChatProvider>
+        <ChatHandlerSetup />
         <UserLevelSync />
         <Router>
           <div className="min-h-screen">

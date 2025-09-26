@@ -15,6 +15,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import PageTransition from '../components/PageTransition';
+import HtmlContent from '../components/HtmlContent';
 
 const HomePage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -147,9 +148,12 @@ const HomePage: React.FC = () => {
                       {post.title}
                     </h3>
                     
-                    <p className="text-gray-300 mb-4 line-clamp-3">
-                      {post.content}
-                    </p>
+                    <div className="text-gray-300 mb-4 line-clamp-3">
+                      <HtmlContent 
+                        content={post.content} 
+                        className="post-preview"
+                      />
+                    </div>
                     
                     <div className="flex items-center justify-between text-sm text-gray-400">
                       <div className="flex items-center space-x-4">

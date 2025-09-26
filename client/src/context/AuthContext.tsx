@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { User } from '../types';
 import { userAPI, authAPI, healthCheck, databaseCheck, handleApiError, forumAPI } from '../utils/api';
+import { clearAllUserCache } from '../components/UserHoverCard';
 import { getUserLevel } from '../utils/userUtils';
 
 const BOT_ACCOUNTS_KEY = 'oldksports_bot_accounts';
@@ -13,11 +14,12 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string, roles?: string[]) => Promise<boolean>;
   logout: () => void;
   updateUserPoints: (points: number) => void;
   updateUser: (userData: Partial<User>) => Promise<void>;
   recalculateUserLevel: () => void;
+  refreshUserData: () => Promise<void>;
   checkHealth: () => Promise<any>;
   checkDatabase: () => Promise<any>;
   getBotAccounts: () => User[];
@@ -57,11 +59,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const userData = JSON.parse(savedUser);
         
-        // 确保所有字段正确映射，特别是isAdmin字段
+        // 确保所有字段正确映射，特别是isAdmin字段和日期字段
         const processedUserData = {
           ...userData,
           isAdmin: userData.is_admin || userData.isAdmin || false,
-          hasUploadedAvatar: userData.has_uploaded_avatar || userData.hasUploadedAvatar || false
+          hasUploadedAvatar: userData.has_uploaded_avatar || userData.hasUploadedAvatar || false,
+          joinDate: userData.joinDate ? new Date(userData.joinDate) : (userData.created_at ? new Date(userData.created_at) : new Date())
         };
         
         console.log('AuthContext初始化 - 从localStorage加载用户数据:', userData);
@@ -100,7 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const processedUserData = {
         ...userData,
         isAdmin: userData.isAdmin || false,
-        hasUploadedAvatar: userData.hasUploadedAvatar || false
+        hasUploadedAvatar: userData.hasUploadedAvatar || false,
+        joinDate: userData.joinDate ? new Date(userData.joinDate) : (userData.created_at ? new Date(userData.created_at) : new Date())
       };
       
       console.log('Login - 原始用户数据:', userData);
@@ -120,6 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(processedUserData);
       setIsAuthenticated(true);
+      
+      // 清除用户卡片缓存，确保显示最新数据
+      clearAllUserCache();
+      
       return true;
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -138,19 +146,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  const register = async (username: string, email: string, password: string): Promise<boolean> => {
+  const register = async (username: string, email: string, password: string, roles?: string[]): Promise<boolean> => {
     try {
-      const response = await authAPI.register(username, email, password);
+      const response = await authAPI.register(username, email, password, roles);
       const userData = response.user || response;
       
       // 处理字段映射，确保 isAdmin 字段正确
       const processedUserData = {
         ...userData,
-        isAdmin: userData.isAdmin || false
+        isAdmin: userData.isAdmin || false,
+        joinDate: userData.joinDate ? new Date(userData.joinDate) : (userData.created_at ? new Date(userData.created_at) : new Date())
       };
       
       setUser(processedUserData);
       setIsAuthenticated(true);
+      
+      // 清除用户卡片缓存，确保显示最新数据
+      clearAllUserCache();
+      
       return true;
     } catch (error: any) {
       console.error('Registration failed:', error);
@@ -247,7 +260,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) throw new Error('Cannot update user: user is null');
     try {
       await userAPI.updateProfile(userData as any);
-      const updatedUser: User = { ...user, ...userData, level: userData.points ? getUserLevel(userData.points) : user.level } as User;
+      
+      // 处理日期字段
+      const processedUserData = {
+        ...userData,
+        joinDate: userData.joinDate ? (userData.joinDate instanceof Date ? userData.joinDate : new Date(userData.joinDate)) : user.joinDate
+      };
+      
+      const updatedUser: User = { 
+        ...user, 
+        ...processedUserData, 
+        level: userData.points ? getUserLevel(userData.points) : user.level 
+      } as User;
+      
       setUser(updatedUser);
       localStorage.setItem('oldksports_user', JSON.stringify(updatedUser));
       if (userData.avatar && userData.avatar !== user.avatar) {
@@ -269,6 +294,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return updatedUser;
     });
   }, []);
+
+  // 强制刷新用户数据（从服务器获取最新数据）
+  const refreshUserData = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      console.log('刷新用户数据...');
+      const response = await userAPI.getUserInfo(user.username);
+      if (response.success && response.user) {
+        const userData = response.user;
+        
+        // 处理字段映射，确保所有字段正确
+        const processedUserData = {
+          ...userData,
+          isAdmin: userData.isAdmin || false,
+          hasUploadedAvatar: userData.hasUploadedAvatar || false,
+          joinDate: userData.joinDate ? new Date(userData.joinDate) : (userData.created_at ? new Date(userData.created_at) : new Date())
+        };
+        
+        console.log('刷新后的用户数据:', processedUserData);
+        
+        // 更新状态和localStorage
+        setUser(processedUserData);
+        localStorage.setItem('oldksports_user', JSON.stringify(processedUserData));
+        
+        // 清除用户卡片缓存，确保显示最新数据
+        clearAllUserCache();
+        
+        console.log('用户数据刷新成功');
+      }
+    } catch (error) {
+      console.error('刷新用户数据失败:', error);
+    }
+  }, [user]);
 
   const onAvatarUpdate = useCallback((callback: (user: User) => void) => {
     avatarUpdateListeners.current.push(callback);
@@ -400,7 +459,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{
-      user, isLoading, isAuthenticated, login, register, logout, updateUserPoints, updateUser, recalculateUserLevel, checkHealth, checkDatabase,
+      user, isLoading, isAuthenticated, login, register, logout, updateUserPoints, updateUser, recalculateUserLevel, refreshUserData, checkHealth, checkDatabase,
       getBotAccounts, addBotAccounts, updateBotAccount, getForumPosts, addForumPost, updateForumPost,
       addForumReply, incrementPostViews, addReplyToPost, onAvatarUpdate, removeAvatarUpdateListener
     }}>
