@@ -120,7 +120,6 @@ server/view-zeabur-users.js
 server/test-backend.js
 server/ultra-simple-migrate.js
 server/simple-migrate.js
-server/minimal-migrate.js
 server/start-production.js
 
 # Documentation files (keep only essential)
