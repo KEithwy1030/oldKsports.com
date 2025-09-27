@@ -100,8 +100,9 @@ class AuthService {
 
       // For development/testing, skip database update and return reset link directly
       const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+      const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
     const resetLink = apiBaseUrl === '/api'
-      ? `http://localhost:8080/reset-password/${resetToken}`
+      ? `${backendUrl}/reset-password/${resetToken}`
         : `${apiBaseUrl.replace('/api', '')}/reset-password/${resetToken}`;
 
       return createSuccessResponse({
