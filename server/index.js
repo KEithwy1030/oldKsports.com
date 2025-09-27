@@ -20,7 +20,7 @@ import { getDb } from "./db.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8080; // 生产环境端口或本地开发端口
+const PORT = process.env.PORT || 3000; // 生产环境端口或本地开发端口
 
 // 支持多个CORS源，包括生产环境的前端域名
 const corsOrigins = [
