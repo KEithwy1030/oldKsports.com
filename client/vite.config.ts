@@ -7,18 +7,18 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 8080, // 前端端口
+      port: 3000, // 前端端口 - 匹配Zeabur配置
       strictPort: true, // 端口被占用时直接报错
       proxy: mode === 'development' ? {
         '/api': {
-          target: `http://localhost:8080`, // 指向后端服务器（统一为8080）
+          target: `http://localhost:3000`, // 指向后端服务器（统一为3000）
           changeOrigin: true,
           // 不重写路径，保持 /api 前缀
         },
       } : {},
     },
     preview: {
-      port: 8080,
+      port: 3000,
       host: '0.0.0.0',
       strictPort: true
     },

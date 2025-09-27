@@ -14,7 +14,7 @@ RUN npm ci --only=production
 COPY . .
 
 # 暴露端口
-EXPOSE 8080
+EXPOSE 3000
 
 # 启动应用
 CMD ["npm", "run", "production"]

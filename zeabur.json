@@ -34,7 +34,7 @@
       },
       "env": {
         "NODE_ENV": "production",
-        "PORT": "8080",
+        "PORT": "3000",
         "CORS_ORIGIN": "https://oldksports.zeabur.app",
         "MYSQL_HOST": "${MYSQL_HOST}",
         "MYSQL_PORT": "3306",
