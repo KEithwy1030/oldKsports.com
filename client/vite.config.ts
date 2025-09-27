@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       } : {},
     },
     preview: {
-      port: 5173,
+      port: 8080,
       host: '0.0.0.0',
       strictPort: true
     },
