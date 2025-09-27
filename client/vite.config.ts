@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true, // 端口被占用时直接报错
       proxy: mode === 'development' ? {
         '/api': {
-          target: `http://localhost:3000`, // 指向后端服务器（统一为3000）
+          target: `http://localhost:8080`, // 本地开发时指向后端8080端口
           changeOrigin: true,
           // 不重写路径，保持 /api 前缀
         },
