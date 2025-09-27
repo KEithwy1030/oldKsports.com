@@ -1,22 +1,14 @@
-# 多阶段构建 Dockerfile
-# 这个文件用于Zeabur自动检测，但实际部署需要使用具体的client/Dockerfile和server/Dockerfile
+FROM node:24-slim
+LABEL "language"="nodejs"
 
-FROM node:18-alpine AS client-builder
-WORKDIR /app/client
-COPY client/package*.json ./
-RUN npm ci
-COPY client/ ./
-RUN npm run build
+WORKDIR /src
+COPY . .
 
-FROM node:18-alpine AS server-builder
-WORKDIR /app/server
-COPY server/package*.json ./
-RUN npm ci --only=production
-COPY server/ ./
+# Change to server directory and install dependencies
+WORKDIR /src/server
+RUN npm ci --production
 
-# 最终阶段 - 这里只是示例，实际部署时会使用具体的Dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY --from=server-builder /app/server ./
-EXPOSE 8080
+EXPOSE 3000
+
+# Use npm run production as startup command
 CMD ["npm", "run", "production"]
