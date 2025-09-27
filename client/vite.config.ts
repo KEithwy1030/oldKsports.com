@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 5173, // 前端端口
+      port: 8080, // 前端端口
       strictPort: true, // 端口被占用时直接报错
       proxy: mode === 'development' ? {
         '/api': {
