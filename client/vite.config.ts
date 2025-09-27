@@ -9,13 +9,13 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173, // 前端端口
       strictPort: true, // 端口被占用时直接报错
-      proxy: {
+      proxy: mode === 'development' ? {
         '/api': {
           target: `http://localhost:8080`, // 指向后端服务器（统一为8080）
           changeOrigin: true,
           // 不重写路径，保持 /api 前缀
         },
-      },
+      } : {},
     },
     preview: {
       port: 5173,

@@ -35,7 +35,7 @@ export const buildImageUrl = (imagePath: string): string => {
   // 本地开发环境：API URL是 /api，需要替换为后端地址
   if (apiUrl === '/api') {
     // 本地开发时，使用环境变量或默认后端地址
-    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:8080');
     return `${backendUrl}${normalizedPath}`;
   }
   
@@ -83,7 +83,7 @@ export const fixImageUrlsInContent = (content: string): string => {
   if (!content) return content;
   
   // 先处理历史数据中的绝对URL，将3001端口统一替换为当前后端地址
-  const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:8080');
   let fixedContent = content.replace(
     /http:\/\/localhost:3001(\/uploads\/images\/[^"]*)/g,
     `${backendUrl}$1`
