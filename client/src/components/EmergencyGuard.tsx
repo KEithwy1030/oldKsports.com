@@ -18,12 +18,14 @@ const EmergencyGuard: React.FC<EmergencyGuardProps> = ({
 }) => {
   const { user, isLoading, isAuthenticated } = useAuth();
   
-  console.log('EmergencyGuard检查:', {
+  console.log('🚨 EmergencyGuard检查:', {
     isLoading,
     isAuthenticated,
     hasUser: !!user,
     userId: user?.id,
-    username: user?.username
+    username: user?.username,
+    userType: typeof user,
+    userKeys: user ? Object.keys(user) : 'null'
   });
   
   // 如果正在加载，显示加载状态

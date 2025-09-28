@@ -5,6 +5,7 @@ import { User } from '../types';
 import { userAPI, authAPI, healthCheck, databaseCheck, handleApiError, forumAPI } from '../utils/api';
 import { clearAllUserCache } from '../components/UserHoverCard';
 import { getUserLevel } from '../utils/userUtils';
+import { forceCleanup, validateUserData, getSafeUsername } from '../utils/forceCleanup';
 
 const BOT_ACCOUNTS_KEY = 'oldksports_bot_accounts';
 const FORUM_POSTS_KEY = 'oldksports_forum_posts';
@@ -53,10 +54,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // 紧急防护：确保用户数据完整性
   const getSafeUser = useCallback(() => {
+    console.log('🔍 AuthContext getSafeUser检查:', {
+      hasUser: !!user,
+      userId: user?.id,
+      username: user?.username,
+      userType: typeof user
+    });
+    
     if (!user || !user.id || !user.username) {
-      console.warn('AuthContext: 用户数据不完整，返回null');
+      console.warn('🔍 AuthContext: 用户数据不完整，返回null');
       return null;
     }
+    
+    if (!validateUserData(user)) {
+      console.warn('🔍 AuthContext: 用户数据验证失败，强制清理');
+      forceCleanup();
+      return null;
+    }
+    
+    console.log('🔍 AuthContext: 用户数据验证通过');
     return user;
   }, [user]);
 

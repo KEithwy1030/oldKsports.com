@@ -27,9 +27,15 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
   useEffect(() => {
     const fetchAvatar = async () => {
+      console.log('🖼️ UserAvatar fetchAvatar被调用:', {
+        username,
+        usernameType: typeof username,
+        usernameLength: username ? username.length : 0
+      });
+      
       // 检查username是否有效
-      if (!username || username === 'undefined') {
-        console.warn('UserAvatar: 无效的用户名:', username);
+      if (!username || username === 'undefined' || username === 'null' || username === '') {
+        console.warn('🖼️ UserAvatar: 无效的用户名:', username);
         setError(true);
         setIsLoading(false);
         return;
