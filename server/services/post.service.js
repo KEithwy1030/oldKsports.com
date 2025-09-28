@@ -30,29 +30,34 @@ export const findPosts = (category) => {
 
         // 修改查询以包含最新回复时间和回复数量，并按最新活动时间排序
         const q = normalized ? 
-            `SELECT p.id, p.title, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar,
+            `SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar,
              COALESCE(MAX(r.created_at), p.created_at) as latest_activity,
              COUNT(r.id) as reply_count
              FROM users u 
              JOIN forum_posts p ON u.id = p.author_id 
              LEFT JOIN forum_replies r ON p.id = r.post_id 
              WHERE p.category=?
-             GROUP BY p.id, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar
+             GROUP BY p.id, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar
              ORDER BY latest_activity DESC` :
-            `SELECT p.id, p.title, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar,
+            `SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar,
              COALESCE(MAX(r.created_at), p.created_at) as latest_activity,
              COUNT(r.id) as reply_count
              FROM users u 
              JOIN forum_posts p ON u.id = p.author_id 
              LEFT JOIN forum_replies r ON p.id = r.post_id 
-             GROUP BY p.id, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar
+             GROUP BY p.id, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar
              ORDER BY latest_activity DESC`;
         const params = normalized ? [normalized] : [];
+        
+        console.log('查询帖子SQL:', q);
+        console.log('查询参数:', params);
+        
         db.query(q, params, (err, data) => {
             if (err) {
                 console.error('查询帖子失败:', err.message);
                 return resolve([]); // 返回空数组而不是拒绝
             }
+            console.log('查询帖子成功，返回数据:', data.length, '条记录');
             resolve(data);
         });
     });
@@ -61,7 +66,7 @@ export const findPosts = (category) => {
 export const findPostById = (postId) => {
     return new Promise((resolve, reject) => {
         // 首先获取帖子信息
-        const postQuery = "SELECT p.id, p.title, p.content, p.author, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar, u.avatar AS userImg FROM users u JOIN forum_posts p ON u.id = p.author_id WHERE p.id = ?";
+        const postQuery = "SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar, u.avatar AS userImg FROM users u JOIN forum_posts p ON u.id = p.author_id WHERE p.id = ?";
         getDb().query(postQuery, [postId], (err, postData) => {
             if (err) return reject(err);
             if (!postData || postData.length === 0) return resolve(null);
