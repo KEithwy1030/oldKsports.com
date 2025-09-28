@@ -210,10 +210,20 @@ export const userAPI = {
   },
   
   getAvatar: async (username: string): Promise<{ success: boolean; avatar: string | null }> => {
+    // 安全检查：确保username不为undefined
+    if (!username || username === 'undefined' || username === 'null') {
+      console.warn('getAvatar: 无效的用户名:', username);
+      return { success: false, avatar: null };
+    }
     return apiRequest<{ success: boolean; avatar: string | null }>(`/users/${username}/avatar`);
   },
 
   getUserInfo: async (username: string): Promise<{ success: boolean; user: { id: number; username: string; email: string; points: number; joinDate: string } }> => {
+    // 安全检查：确保username不为undefined
+    if (!username || username === 'undefined' || username === 'null') {
+      console.warn('getUserInfo: 无效的用户名:', username);
+      return { success: false, user: { id: 0, username: '', email: '', points: 0, joinDate: '' } };
+    }
     return apiRequest<{ success: boolean; user: { id: number; username: string; email: string; points: number; joinDate: string } }>(`/users/${username}/info`);
   }
 };

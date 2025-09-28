@@ -571,16 +571,18 @@ const PostDetailPage: React.FC = () => {
                 className="cursor-pointer hover:scale-105 transition-transform"
                 title={`与 ${post.author} 私信`}
               >
-                <UserAvatar 
-                  username={post.author} 
-                  size="md"
-                  className="w-12 h-12"
-                />
+                {post.author && (
+                  <UserAvatar 
+                    username={post.author} 
+                    size="md"
+                    className="w-12 h-12"
+                  />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="font-semibold text-white truncate max-w-[180px] md:max-w-[260px]">{post.author}</div>
-                  <UserLevelComponent username={post.author} />
+                  <div className="font-semibold text-white truncate max-w-[180px] md:max-w-[260px]">{post.author || '未知用户'}</div>
+                  {post.author && <UserLevelComponent username={post.author} />}
                 </div>
                 <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[12px] md:text-sm text-gray-400 mt-0.5">
                   <span className="flex items-center space-x-1">
@@ -673,16 +675,18 @@ const PostDetailPage: React.FC = () => {
                         className="cursor-pointer hover:scale-105 transition-transform"
                         title={`与 ${reply.author} 私信`}
                       >
-                        <UserAvatar 
-                          username={reply.author} 
-                          size="sm"
-                          className="w-10 h-10"
-                        />
+                        {reply.author && (
+                          <UserAvatar 
+                            username={reply.author} 
+                            size="sm"
+                            className="w-10 h-10"
+                          />
+                        )}
                       </div>
                       <div>
-                        <div className="font-semibold text-white text-sm">{reply.author}</div>
+                        <div className="font-semibold text-white text-sm">{reply.author || '未知用户'}</div>
                         <div className="flex items-center space-x-2 text-xs text-gray-400">
-                          <UserLevelComponent username={reply.author} />
+                          {reply.author && <UserLevelComponent username={reply.author} />}
                           <span className="flex items-center space-x-1">
                             <Clock size={12} />
                             <span>{formatTimeAgo(reply.createdAt || reply.created_at)}</span>

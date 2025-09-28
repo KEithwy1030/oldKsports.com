@@ -139,7 +139,7 @@ const HomePage: React.FC = () => {
                         </div>
                       )}
                       <div>
-                        <div className="font-medium text-white">{post.author}</div>
+                        <div className="font-medium text-white">{post.author || '未知用户'}</div>
                         <div className="text-sm text-gray-400">{post.category}</div>
                       </div>
                     </div>

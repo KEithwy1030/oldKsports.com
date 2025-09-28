@@ -151,7 +151,7 @@ function renderCard(user: CachedUser) {
   // 头像（居中显示）
   const avatar = user.avatar
     ? `<img src="${user.avatar}" style="width:80px;height:80px;border-radius:9999px;object-fit:cover;border:3px solid rgba(255,255,255,.3);" />`
-    : `<div style="width:80px;height:80px;border-radius:9999px;background:linear-gradient(135deg,rgba(16,185,129,.3),rgba(59,130,246,.3));display:flex;align-items:center;justify-content:center;border:3px solid rgba(16,185,129,.4);color:#34d399;font-weight:700;font-size:32px;">${user.username?.charAt(0)?.toUpperCase?.() || '?'}</div>`;
+    : `<div style="width:80px;height:80px;border-radius:9999px;background:linear-gradient(135deg,rgba(16,185,129,.3),rgba(59,130,246,.3));display:flex;align-items:center;justify-content:center;border:3px solid rgba(16,185,129,.4);color:#34d399;font-weight:700;font-size:32px;">${user.username && user.username.length > 0 ? user.username.charAt(0).toUpperCase() : '?'}</div>`;
 
   // 获取身份标签（只显示实际身份，预留空间）
   const getRoleTags = () => {
