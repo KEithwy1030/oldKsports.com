@@ -1,3 +1,6 @@
+// 修复消息路由文件
+// 将以下内容替换到 server/routes/messages.js
+
 import express from 'express';
 import { getDb } from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -37,7 +40,7 @@ router.get('/users', authenticateToken, async (req, res) => {
       ORDER BY last_message_time DESC
     `;
     
-    getDb().query(query, [userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId], (err, results) => {
+    getDb().query(query, [userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId, userId], (err, results) => {
       if (err) {
         console.error('获取聊天用户列表失败:', err);
         return res.status(500).json({ success: false, error: '获取用户列表失败' });
@@ -93,15 +96,15 @@ router.get('/conversation/:userId', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const senderId = req.user.id;
-    const { receiver_id, content } = req.body;
+    const { recipient_id, content } = req.body;
     
-    if (!receiver_id || !content || !content.trim()) {
+    if (!recipient_id || !content || !content.trim()) {
       return res.status(400).json({ success: false, error: '缺少必要参数' });
     }
     
     // 验证接收者存在
     const checkUserQuery = 'SELECT id FROM users WHERE id = ?';
-    getDb().query(checkUserQuery, [receiver_id], (err, userResults) => {
+    getDb().query(checkUserQuery, [recipient_id], (err, userResults) => {
       if (err) {
         console.error('验证用户失败:', err);
         return res.status(500).json({ success: false, error: '验证用户失败' });
@@ -117,7 +120,7 @@ router.post('/', authenticateToken, async (req, res) => {
         VALUES (?, ?, ?)
       `;
       
-      getDb().query(insertQuery, [senderId, receiver_id, content.trim()], (err, result) => {
+      getDb().query(insertQuery, [senderId, recipient_id, content.trim()], (err, result) => {
         if (err) {
           console.error('发送消息失败:', err);
           return res.status(500).json({ success: false, error: '发送消息失败' });
@@ -168,7 +171,6 @@ router.put('/mark-read/:userId', authenticateToken, async (req, res) => {
 
 // 标记所有消息为已读
 router.put('/mark-all-read', authenticateToken, async (req, res) => {
-  console.log('🔥 收到mark-all-read请求, 用户ID:', req.user?.id);
   try {
     const currentUserId = req.user.id;
     
@@ -184,7 +186,6 @@ router.put('/mark-all-read', authenticateToken, async (req, res) => {
         return res.status(500).json({ success: false, error: '标记失败' });
       }
       
-      console.log('🔥 标记所有消息已读成功, 影响行数:', result.affectedRows);
       res.json({
         success: true,
         message: '所有消息已标记为已读',
@@ -196,14 +197,5 @@ router.put('/mark-all-read', authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, error: '服务器错误' });
   }
 });
-
-// 添加一个简单的测试路由
-router.put('/test-route', (req, res) => {
-  console.log('🔥 测试路由被调用');
-  res.json({ success: true, message: '测试路由工作正常' });
-});
-
-// 强制触发文件更新
-console.log('🔥 Messages路由文件已更新 - ' + new Date().toISOString());
 
 export default router;
