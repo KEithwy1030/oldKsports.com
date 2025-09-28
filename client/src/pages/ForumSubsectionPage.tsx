@@ -180,7 +180,7 @@ const ForumSubsectionPage: React.FC = () => {
                         className="w-6 h-6 bg-emerald-600/20 rounded-full flex items-center justify-center border border-emerald-500/30 hover:bg-emerald-600/30 transition-colors"
                       >
                         <span className="text-emerald-400 text-xs font-semibold">
-                          {post.author.charAt(0)}
+                          {post.author ? post.author.charAt(0) : '?'}
                         </span>
                       </button>
                       <div className="flex items-center space-x-2">

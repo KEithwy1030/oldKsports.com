@@ -73,7 +73,7 @@ const RealTimeAvatar: React.FC<RealTimeAvatarProps> = ({
           size === 'md' ? 'text-sm' :
           size === 'lg' ? 'text-lg' : 'text-2xl'
         }`}>
-          {user.username.charAt(0).toUpperCase()}
+          {user.username ? user.username.charAt(0).toUpperCase() : '?'}
         </span>
       )}
     </div>

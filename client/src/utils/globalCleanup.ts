@@ -64,3 +64,16 @@ export const getSafePostAuthor = (post: any): string => {
   
   return safeAuthor;
 };
+
+// 安全获取帖子作者（更严格的检查）
+export const getSafePostAuthorStrict = (post: any): string | null => {
+  if (!post) return null;
+  
+  const author = post.author || post.username || post.user_name;
+  if (!author) return null;
+  
+  const safeAuthor = getSafeUsername(author);
+  if (!safeAuthor) return null;
+  
+  return safeAuthor;
+};

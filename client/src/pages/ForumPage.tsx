@@ -17,7 +17,7 @@ import TokenCleaner from '../components/TokenCleaner';
 import HtmlContent from '../components/HtmlContent';
 import { compressImages, validateImageFile, buildImageUrl, fixImageUrlsInContent } from '../utils/imageUtils';
 import { tokenSync } from '../utils/tokenSync';
-import { getSafePostAuthor, getSafeUserId } from '../utils/globalCleanup';
+import { getSafePostAuthor, getSafePostAuthorStrict, getSafeUserId } from '../utils/globalCleanup';
 
 const ForumPage: React.FC = () => {
   const navigate = useNavigate();
@@ -671,8 +671,8 @@ const ForumPage: React.FC = () => {
                   </div>
                 ) : (
                   sortedPosts.map((post) => {
-                    // 安全获取作者信息
-                    const author = getSafePostAuthor(post);
+                    // 安全获取作者信息（使用更严格的检查）
+                    const author = getSafePostAuthorStrict(post);
                     const authorId = getSafeUserId(post.author_id || post.user_id);
                     
                     console.log('📝 ForumPage渲染帖子:', {
@@ -681,6 +681,12 @@ const ForumPage: React.FC = () => {
                       authorId: authorId,
                       authorType: typeof author
                     });
+                    
+                    // 如果作者信息无效，跳过渲染
+                    if (!author) {
+                      console.warn('📝 ForumPage: 跳过无效作者帖子:', post.id, 'author:', author);
+                      return null;
+                    }
                     
                     const avatarUrl = getUserAvatar(author);
                     const lastReplyTime = post.replies && post.replies.length > 0 ? formatTimeAgo(post.replies[post.replies.length - 1].createdAt) : formatTimeAgo(post.timestamp);
