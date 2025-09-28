@@ -48,7 +48,11 @@ const apiRequest = async <T = any>(endpoint: string, options: RequestInit = {}):
     });
     
     const config: RequestInit = {
-      headers: authHeaders,
+      headers: {
+        ...authHeaders,
+        'Origin': window.location.origin, // 明确设置Origin头
+        'Referer': window.location.href   // 设置Referer头
+      },
       credentials: 'include',
       ...options
     };

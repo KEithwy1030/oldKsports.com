@@ -40,7 +40,13 @@ console.log('CORS Environment Variable:', process.env.CORS_ORIGIN);
 app.use(cors({ 
   origin: (origin, callback) => {
     console.log('CORS Request Origin:', origin);
-    if (!origin || corsOrigins.includes(origin)) {
+    // 拒绝undefined origin，只允许明确的域名
+    if (!origin) {
+      console.log('CORS Blocked: No origin header');
+      callback(new Error('No origin header'));
+      return;
+    }
+    if (corsOrigins.includes(origin)) {
       console.log('CORS Allowed:', origin);
       callback(null, true);
     } else {
