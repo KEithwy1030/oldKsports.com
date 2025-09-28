@@ -4,6 +4,16 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// 测试端点 - 验证路由是否正常工作
+router.get('/test', (req, res) => {
+  console.log('🧪 消息API测试端点被调用');
+  res.json({ 
+    success: true, 
+    message: '消息API路由正常工作',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 获取聊天用户列表（按最新消息排序）
 router.get('/users', authenticateToken, async (req, res) => {
   try {
@@ -58,10 +68,17 @@ router.get('/users', authenticateToken, async (req, res) => {
 router.get('/conversation/:userId', authenticateToken, async (req, res) => {
   try {
     console.log('🔍 获取对话消息请求:', {
+      method: req.method,
+      url: req.url,
+      originalUrl: req.originalUrl,
       currentUserId: req.user?.id,
       otherUserId: req.params.userId,
-      user: req.user
+      user: req.user,
+      headers: req.headers
     });
+    
+    // 确保返回JSON格式
+    res.setHeader('Content-Type', 'application/json');
     
     const currentUserId = req.user.id;
     const otherUserId = parseInt(req.params.userId);
@@ -74,6 +91,13 @@ router.get('/conversation/:userId', authenticateToken, async (req, res) => {
     if (!otherUserId || isNaN(otherUserId)) {
       console.error('❌ 无效的用户ID:', req.params.userId);
       return res.status(400).json({ success: false, error: '无效的用户ID' });
+    }
+    
+    // 检查数据库连接
+    const db = getDb();
+    if (!db) {
+      console.error('❌ 数据库连接失败');
+      return res.status(500).json({ success: false, error: '数据库连接失败' });
     }
     
     const query = `
@@ -91,7 +115,7 @@ router.get('/conversation/:userId', authenticateToken, async (req, res) => {
     console.log('📝 执行查询:', query);
     console.log('📝 查询参数:', [currentUserId, otherUserId, otherUserId, currentUserId]);
     
-    getDb().query(query, [currentUserId, otherUserId, otherUserId, currentUserId], (err, results) => {
+    db.query(query, [currentUserId, otherUserId, otherUserId, currentUserId], (err, results) => {
       if (err) {
         console.error('❌ 获取对话消息失败:', err);
         return res.status(500).json({ success: false, error: '获取消息失败' });
@@ -100,7 +124,7 @@ router.get('/conversation/:userId', authenticateToken, async (req, res) => {
       console.log('✅ 获取对话消息成功，消息数量:', results.length);
       res.json({
         success: true,
-        data: results
+        data: results || []
       });
     });
   } catch (error) {
