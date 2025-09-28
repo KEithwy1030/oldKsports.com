@@ -25,15 +25,29 @@ const PORT = process.env.PORT || 3000; // 生产环境端口或本地开发端�
 // 支持多个CORS源，包括生产环境的前端域名
 const corsOrigins = [
   process.env.CORS_ORIGIN,
-  "https://oldksports.zeabur.app",
-  "https://oldksports-frontend.zeabur.app",
-  "http://localhost:5173"
+  "https://oldksports-web.zeabur.app",      // 当前前端域名
+  "https://oldksports-app.zeabur.app",      // 当前后端域名（允许自调用）
+  "https://oldksports.zeabur.app",          // 旧域名（兼容性）
+  "https://oldksports-frontend.zeabur.app", // 旧域名（兼容性）
+  "https://oldksports.com",                 // 未来自定义域名
+  "http://localhost:5173",                  // 本地开发
+  "http://localhost:3000"                   // 本地开发备用端口
 ].filter(Boolean); // 过滤掉undefined值
 
 console.log('CORS Origins:', corsOrigins);
+console.log('CORS Environment Variable:', process.env.CORS_ORIGIN);
 
 app.use(cors({ 
-  origin: corsOrigins.length > 0 ? corsOrigins : "http://localhost:5173", 
+  origin: (origin, callback) => {
+    console.log('CORS Request Origin:', origin);
+    if (!origin || corsOrigins.includes(origin)) {
+      console.log('CORS Allowed:', origin);
+      callback(null, true);
+    } else {
+      console.log('CORS Blocked:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
