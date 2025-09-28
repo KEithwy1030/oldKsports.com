@@ -246,13 +246,15 @@ const UserProfile: React.FC = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // 多重压缩策略：从大到小尝试
+            // 多重压缩策略：从大到小尝试，提供更好的用户体验
             const compressionLevels = [
-              { maxSize: 50, quality: 0.1 },   // 第一级：50px, 10%质量
-              { maxSize: 40, quality: 0.05 },  // 第二级：40px, 5%质量
-              { maxSize: 30, quality: 0.03 }, // 第三级：30px, 3%质量
-              { maxSize: 25, quality: 0.02 },  // 第四级：25px, 2%质量
-              { maxSize: 20, quality: 0.01 }  // 第五级：20px, 1%质量
+              { maxSize: 120, quality: 0.8 },  // 第一级：120px, 80%质量 - 高质量
+              { maxSize: 100, quality: 0.6 },  // 第二级：100px, 60%质量 - 中等质量
+              { maxSize: 80, quality: 0.4 },   // 第三级：80px, 40%质量 - 较低质量
+              { maxSize: 60, quality: 0.3 },   // 第四级：60px, 30%质量 - 低质量
+              { maxSize: 50, quality: 0.2 },   // 第五级：50px, 20%质量 - 很低质量
+              { maxSize: 40, quality: 0.1 },   // 第六级：40px, 10%质量 - 极低质量
+              { maxSize: 30, quality: 0.05 }   // 第七级：30px, 5%质量 - 极限质量
             ];
             
             let bestResult = '';
@@ -288,7 +290,9 @@ const UserProfile: React.FC = () => {
               const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
               console.log(`压缩级别${currentLevel + 1}: ${maxSize}px, 质量${quality}, 长度: ${compressedDataUrl.length}`);
               
-              if (compressedDataUrl.length <= 255) {
+              // 检查长度限制 - 如果数据库字段已修改为TEXT，则使用更宽松的限制
+              const maxLength = 10000; // TEXT字段可以支持更长的数据
+              if (compressedDataUrl.length <= maxLength) {
                 console.log('压缩成功！长度:', compressedDataUrl.length);
                 resolve(compressedDataUrl);
               } else {
@@ -309,7 +313,7 @@ const UserProfile: React.FC = () => {
         // 强制压缩头像
         const compressedAvatar = await compressAvatar(croppedImageUrl);
         
-        if (compressedAvatar.length > 255) {
+        if (compressedAvatar.length > 10000) {
           alert(`头像图片过大（${compressedAvatar.length}字符），请选择更小的图片或使用更简单的图片`);
           setIsUploading(false);
           return;
