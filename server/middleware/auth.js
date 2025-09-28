@@ -31,8 +31,24 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // 验证JWT令牌
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'oldksports_jwt_secret_key_2024');
-    console.log('JWT解码成功:', { userId: decoded.userId, exp: decoded.exp });
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'oldksports_jwt_secret_key_2024');
+      console.log('JWT解码成功:', { userId: decoded.userId, exp: decoded.exp });
+    } catch (jwtError) {
+      console.error('认证失败详情:', {
+        name: jwtError.name,
+        message: jwtError.message,
+        expiredAt: jwtError.expiredAt,
+        stack: jwtError.stack
+      });
+      
+      return res.status(401).json({
+        success: false,
+        error: '访问令牌无效',
+        details: jwtError.message
+      });
+    }
     
     // 从数据库获取用户信息
     console.log('🔍 查询用户ID:', decoded.userId, '类型:', typeof decoded.userId);

@@ -39,9 +39,22 @@ export const buildApiUrl = (endpoint: string): string => {
 
 export const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('oldksports_auth_token');
+  
+  console.log('getAuthHeaders Debug:', {
+    tokenExists: !!token,
+    tokenLength: token ? token.length : 0,
+    tokenPreview: token ? token.substring(0, 20) + '...' : 'null'
+  });
+  
+  if (!token) {
+    console.warn('⚠️ 没有找到认证token');
+    return {
+      'Content-Type': 'application/json'
+    };
+  }
+  
   return {
     'Content-Type': 'application/json',
-    // 同时支持cookie和Authorization header
-    ...(token && { 'Authorization': `Bearer ${token}` })
+    'Authorization': `Bearer ${token}`
   };
 };

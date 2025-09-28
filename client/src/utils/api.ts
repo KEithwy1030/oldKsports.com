@@ -39,13 +39,19 @@ export interface UserResponse {
 const apiRequest = async <T = any>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   try {
     const url = buildApiUrl(endpoint);
+    const authHeaders = getAuthHeaders();
+    
+    console.log('API Request Debug:', { 
+      url, 
+      authHeaders,
+      token: authHeaders.Authorization ? 'Present' : 'Missing'
+    });
+    
     const config: RequestInit = {
-      headers: getAuthHeaders(),
+      headers: authHeaders,
       credentials: 'include',
       ...options
     };
-
-    console.log('API Request:', { url, config });
     
     const response = await fetch(url, config);
     
@@ -57,14 +63,19 @@ const apiRequest = async <T = any>(endpoint: string, options: RequestInit = {}):
       // 如果是401或403错误且提示无效token，自动清理token
       if ((response.status === 401 || response.status === 403) && 
           (errorData.error?.includes('无效的访问令牌') || errorData.error?.includes('invalid signature') || 
-           errorData.error?.includes('Access token required') || errorData.error?.includes('Unauthorized'))) {
-        console.warn('检测到无效token，正在清理...');
+           errorData.error?.includes('Access token required') || errorData.error?.includes('Unauthorized') ||
+           errorData.error?.includes('访问令牌缺失') || errorData.error?.includes('jwt malformed'))) {
+        console.warn('检测到无效token，正在清理...', errorData);
         localStorage.removeItem('oldksports_auth_token');
         localStorage.removeItem('oldksports_user');
+        localStorage.removeItem('access_token');
         document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        // 对于401错误，静默处理，不抛出错误
+        
+        // 对于401错误，返回特殊错误以便前端处理
         if (response.status === 401) {
-          return Promise.resolve({} as T);
+          const authError = new Error('访问令牌缺失');
+          (authError as any).response = { status: 401, data: errorData };
+          throw authError;
         }
       }
       
