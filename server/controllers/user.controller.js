@@ -101,6 +101,12 @@ export const updateUserProfile = async (req, res) => {
             }
         }
         
+        // 如果更新头像，自动设置has_uploaded_avatar为true
+        if (updateData.avatar && !fieldsToUpdate.includes('has_uploaded_avatar = ?')) {
+            fieldsToUpdate.push('has_uploaded_avatar = ?');
+            values.push(1);
+        }
+        
         if (fieldsToUpdate.length === 0) {
             console.log('没有有效字段需要更新:', updateData);
             return res.status(400).json({ success: false, error: 'No valid fields to update' });

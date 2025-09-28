@@ -312,7 +312,7 @@ const UserProfile: React.FC = () => {
             });
             
             // 只有数据库中明确显示没有上传过头像才给积分
-            shouldGivePoints = !dbHasUploadedAvatar || dbHasUploadedAvatar === 0 || dbHasUploadedAvatar === false;
+            shouldGivePoints = !dbHasUploadedAvatar || dbHasUploadedAvatar === 0 || dbHasUploadedAvatar === false || dbHasUploadedAvatar === '0';
           } else {
             // 如果无法获取数据库状态，使用前端状态（更保守的做法）
             shouldGivePoints = !user.hasUploadedAvatar;
@@ -348,6 +348,23 @@ const UserProfile: React.FC = () => {
         setIsUploading(false);
         setIsEditingAvatar(false);
         handleAvatarCancel();
+        
+        // 更新用户状态，确保头像立即生效
+        if (shouldGivePoints) {
+          // 首次上传，更新hasUploadedAvatar状态
+          updateUser({ 
+            ...user, 
+            avatar: croppedImageUrl,
+            hasUploadedAvatar: true,
+            points: user.points + POINTS_SYSTEM.UPLOAD_AVATAR
+          });
+        } else {
+          // 非首次上传，只更新头像
+          updateUser({ 
+            ...user, 
+            avatar: croppedImageUrl
+          });
+        }
         
         // 额外的头像刷新机制
         setTimeout(() => {
