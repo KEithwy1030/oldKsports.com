@@ -79,8 +79,8 @@ export const updateUserProfile = async (req, res) => {
         const userId = req.user.id;
         const updateData = req.body;
         
-        // 构建动态更新SQL
-        const allowedFields = ['avatar', 'email', 'username', 'hasUploadedAvatar', 'roles'];
+        // 构建动态更新SQL（只更新确实存在的字段）
+        const allowedFields = ['avatar', 'email', 'username', 'hasUploadedAvatar'];
         const fieldsToUpdate = [];
         const values = [];
         
@@ -90,10 +90,6 @@ export const updateUserProfile = async (req, res) => {
                 if (key === 'hasUploadedAvatar') {
                     fieldsToUpdate.push('has_uploaded_avatar = ?');
                     values.push(value ? 1 : 0);
-                } else if (key === 'roles') {
-                    // 处理roles数组，转换为JSON字符串
-                    fieldsToUpdate.push('roles = ?');
-                    values.push(JSON.stringify(value));
                 } else {
                     fieldsToUpdate.push(`${key} = ?`);
                     values.push(value);
@@ -129,10 +125,10 @@ export const updateUserProfile = async (req, res) => {
             });
         });
         
-        // 获取更新后的用户信息
+        // 获取更新后的用户信息（只查询确实存在的字段）
         const updatedUser = await new Promise((resolve, reject) => {
             getDb().query(
-                'SELECT id, username, email, points, avatar, has_uploaded_avatar, role, roles, created_at FROM users WHERE id = ?',
+                'SELECT id, username, email, points, avatar, has_uploaded_avatar, created_at FROM users WHERE id = ?',
                 [userId],
                 (err, results) => {
                     if (err) reject(err);
@@ -140,27 +136,6 @@ export const updateUserProfile = async (req, res) => {
                 }
             );
         });
-        
-        // 解析roles JSON字段
-        let roles = null;
-        if (updatedUser.roles) {
-            try {
-                // 尝试解析JSON格式
-                roles = JSON.parse(updatedUser.roles);
-            } catch (e) {
-                // 如果JSON解析失败，尝试解析逗号分隔的字符串
-                try {
-                    if (typeof updatedUser.roles === 'string' && updatedUser.roles.includes(',')) {
-                        roles = updatedUser.roles.split(',').map(role => role.trim()).filter(role => role);
-                    } else if (typeof updatedUser.roles === 'string') {
-                        roles = [updatedUser.roles.trim()];
-                    }
-                } catch (e2) {
-                    console.warn('Failed to parse roles:', updatedUser.roles);
-                    roles = null;
-                }
-            }
-        }
         
         res.json({
             success: true,
@@ -172,14 +147,23 @@ export const updateUserProfile = async (req, res) => {
                 points: updatedUser.points,
                 avatar: updatedUser.avatar,
                 hasUploadedAvatar: updatedUser.has_uploaded_avatar,
-                role: updatedUser.role || '用户',
-                roles: roles,
                 joinDate: updatedUser.created_at
             }
         });
     } catch (error) {
         console.error('Error updating user profile:', error);
-        res.status(500).json({ success: false, error: 'Failed to update profile' });
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            errno: error.errno,
+            sqlState: error.sqlState
+        });
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to update profile',
+            details: error.message 
+        });
     }
 };
 
