@@ -27,18 +27,20 @@ import NotificationsPage from './pages/NotificationsPage';
 import ChatWidget from './components/ChatWidget';
 import ChatHandlerSetup from './components/ChatHandlerSetup';
 import EmergencyGuard from './components/EmergencyGuard';
+import ErrorBoundary from './components/ErrorBoundary';
 import { initUserHoverAutobind } from './components/UserHoverCard';
 
 function App() {
   // 兜底自动绑定：让任意带 data-username/data-user 的元素都能触发用户卡片
   try { initUserHoverAutobind(); } catch {}
   return (
-    <AuthProvider>
-      <ChatProvider>
+    <ErrorBoundary>
+      <AuthProvider>
         <EmergencyGuard>
-          <ChatHandlerSetup />
-          <UserLevelSync />
-          <Router>
+          <ChatProvider>
+            <ChatHandlerSetup />
+            <UserLevelSync />
+            <Router>
             <div className="min-h-screen">
               <Navigation />
               <Routes>
@@ -67,9 +69,10 @@ function App() {
           <ChatWidget />
         </div>
       </Router>
+          </ChatProvider>
         </EmergencyGuard>
-      </ChatProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

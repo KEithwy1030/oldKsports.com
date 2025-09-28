@@ -76,9 +76,19 @@ function ensureContainer() {
 
 async function getUser(username: string, forceRefresh = false): Promise<CachedUser> {
   // 紧急防护：检查username有效性
-  if (!username || username === 'undefined' || username === 'null') {
+  if (!username || username === 'undefined' || username === 'null' || username === '') {
     console.warn('🔥 getUser: 无效的用户名:', username);
-    return { username: username || 'unknown' };
+    // 返回一个安全的默认用户对象
+    return { 
+      username: 'unknown',
+      id: null,
+      avatar: null,
+      role: null,
+      roles: null,
+      level: null,
+      points: 0,
+      joinDate: null
+    };
   }
   
   console.log('🔥 getUser 被调用:', username, forceRefresh);
