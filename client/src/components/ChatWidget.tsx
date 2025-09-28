@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
+import { filterValidUsers, validateChatUser } from '../utils/userDataValidator';
 
 interface ChatMessage {
   id: number;
@@ -123,7 +124,16 @@ const ChatWidget: React.FC = () => {
 
   // 获取聊天用户列表
   const fetchChatUsers = async () => {
-    if (!user) return;
+    if (!user) {
+      console.warn('🔥 ChatWidget: 用户未登录，跳过获取聊天用户');
+      return;
+    }
+    
+    console.log('🔥 ChatWidget: 开始获取聊天用户，当前用户:', {
+      userId: user.id,
+      username: user.username,
+      userType: typeof user
+    });
     
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '/api';
@@ -137,17 +147,29 @@ const ChatWidget: React.FC = () => {
         const data = await response.json();
         if (data.success) {
           console.log('🔥 获取到的聊天用户数据:', data.data);
-          setChatUsers(data.data);
+          
+          // 过滤掉无效的用户数据
+          const validUsers = filterValidUsers(data.data);
+          
+          console.log('🔥 过滤后的有效用户:', validUsers);
+          setChatUsers(validUsers);
           
           // 重新计算总未读数
-          const total = data.data.reduce((sum: number, u: any) => sum + (u.unread_count || 0), 0);
+          const total = validUsers.reduce((sum: number, u: any) => sum + (u.unread_count || 0), 0);
           console.log('🔥 重新计算总未读数:', total);
           setTotalUnreadCount(total);
           
-          // 如果没有选中用户且有聊天记录，选择第一个
-          if (!localSelectedUserId && !selectedUserId && data.data.length > 0) {
-            console.log('🔥 自动选择第一个用户:', data.data[0]);
-            setLocalSelectedUserId(data.data[0].user_id || data.data[0].id);
+          // 如果没有选中用户且有聊天记录，选择第一个有效用户
+          if (!localSelectedUserId && !selectedUserId && validUsers.length > 0) {
+            // 选择第一个有效用户
+            const validUser = validUsers[0];
+            
+            if (validUser) {
+              console.log('🔥 自动选择第一个有效用户:', validUser);
+              setLocalSelectedUserId(validUser.user_id || validUser.id);
+            } else {
+              console.warn('🔥 没有找到有效的聊天用户');
+            }
           }
         }
       } else {
