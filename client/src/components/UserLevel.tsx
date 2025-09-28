@@ -40,12 +40,13 @@ const UserLevelComponent: React.FC<UserLevelProps> = ({ username, className = ''
           console.log(`Calculated level for ${username} (${response.user.points} points):`, level);
           setUserLevel(level);
         } else {
-          console.error(`Failed to get user info for ${username}:`, response);
+          console.warn('🏆 UserLevel: 获取用户信息失败，使用默认等级');
           setError(true);
         }
       } catch (err) {
-        console.error(`Failed to fetch user level for ${username}:`, err);
+        console.error('🏆 UserLevel: 获取用户等级异常:', username, err);
         setError(true);
+        // 不抛出错误，避免页面崩溃
       } finally {
         setIsLoading(false);
       }

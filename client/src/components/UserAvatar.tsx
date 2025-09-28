@@ -50,11 +50,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         if (response.success) {
           setAvatar(response.avatar);
         } else {
+          console.warn('🖼️ UserAvatar: 获取头像失败，使用默认头像');
           setError(true);
         }
       } catch (err) {
-        console.error('Failed to fetch avatar for', username, err);
+        console.error('🖼️ UserAvatar: 获取头像异常:', username, err);
         setError(true);
+        // 不抛出错误，避免页面崩溃
       } finally {
         setIsLoading(false);
       }
