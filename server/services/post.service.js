@@ -106,17 +106,8 @@ export const createPost = async (postData, userId) => {
             throw new Error("帖子标题已存在，请使用不同的标题");
         }
         
-        // 需要先获取用户名，因为数据库表需要 author 字段
-        const userRows = await new Promise((resolve, reject) => {
-            getDb().query("SELECT username FROM users WHERE id = ?", [userId], (err, results) => {
-                if (err) reject(err);
-                else resolve(results);
-            });
-        });
-        if (userRows.length === 0) throw new Error("User not found");
-        
-        const username = userRows[0].username;
-        const q = "INSERT INTO forum_posts(`title`, `content`, `category`, `author_id`, `author`, `created_at`) VALUES (?, ?, ?, ?, ?, ?)";
+        // 直接使用author_id，不需要author字段
+        const q = "INSERT INTO forum_posts(`title`, `content`, `category`, `author_id`, `created_at`) VALUES (?, ?, ?, ?, ?)";
         
         // 确保所有参数都不是undefined，使用null代替
         const values = [ 
@@ -124,11 +115,10 @@ export const createPost = async (postData, userId) => {
             postData.content || null, 
             normalizeCategory(postData.category) || 'general', 
             userId || null, 
-            username || null, 
             new Date() 
         ];
         
-        console.log('创建帖子参数:', { postData, userId, username, values });
+        console.log('创建帖子参数:', { postData, userId, values });
         
         await new Promise((resolve, reject) => {
             getDb().query(q, values, (err, results) => {
