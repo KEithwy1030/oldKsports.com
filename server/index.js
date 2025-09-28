@@ -208,12 +208,22 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 处理未匹配的路由
-app.use('*', (req, res) => {
-  console.log('❌ 未找到路由:', req.originalUrl);
+// 处理未匹配的API路由
+app.use('/api/*', (req, res) => {
+  console.log('❌ 未找到API路由:', req.originalUrl);
   res.status(404).json({ 
     success: false, 
     error: 'API路由未找到',
+    path: req.originalUrl 
+  });
+});
+
+// 处理其他未匹配的路由
+app.use((req, res) => {
+  console.log('❌ 未找到路由:', req.originalUrl);
+  res.status(404).json({ 
+    success: false, 
+    error: '路由未找到',
     path: req.originalUrl 
   });
 });
