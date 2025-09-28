@@ -238,13 +238,62 @@ const UserProfile: React.FC = () => {
       console.log('URL length:', croppedImageUrl.length);
       console.log('URL starts with data:image:', croppedImageUrl.startsWith('data:image'));
       
+      // 检查头像数据长度，如果太长则压缩
+      let finalAvatarUrl = croppedImageUrl;
+      if (croppedImageUrl.length > 65535) { // TEXT字段最大长度
+        console.log('头像数据过长，尝试压缩...');
+        
+        // 创建图片对象进行压缩
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // 计算压缩后的尺寸（保持宽高比）
+          const maxSize = 200; // 最大200px
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxSize) {
+              height = (height * maxSize) / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = (width * maxSize) / height;
+              height = maxSize;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // 绘制压缩后的图片
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // 转换为Base64，使用较低质量
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          
+          if (compressedDataUrl.length <= 65535) {
+            finalAvatarUrl = compressedDataUrl;
+            console.log('头像压缩成功，新长度:', compressedDataUrl.length);
+          } else {
+            alert('头像图片过大，请选择较小的图片');
+            setIsUploading(false);
+            return;
+          }
+        };
+        
+        img.src = croppedImageUrl;
+        return; // 异步处理，直接返回
+      }
+      
       try {
         // 添加时间戳避免缓存问题
         const timestampedAvatar = `${croppedImageUrl}#${Date.now()}`;
         
         // 使用 updateUser 方法更新用户信息
         const updateData = {
-          avatar: croppedImageUrl, // 存储时不包含时间戳
+          avatar: finalAvatarUrl, // 使用处理后的头像URL
           hasUploadedAvatar: true
         };
         
