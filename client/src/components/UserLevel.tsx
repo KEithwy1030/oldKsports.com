@@ -22,7 +22,7 @@ const UserLevelComponent: React.FC<UserLevelProps> = ({ username, className = ''
       });
       
       // 检查username是否有效
-      if (!username || username === 'undefined' || username === 'null' || username === '') {
+      if (!username || username === 'undefined' || username === 'null' || username === '' || username === 'unknown') {
         console.warn('🏆 UserLevel: 无效的用户名:', username);
         setError(true);
         setIsLoading(false);

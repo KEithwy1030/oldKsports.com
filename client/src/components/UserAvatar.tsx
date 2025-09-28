@@ -34,7 +34,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       });
       
       // 检查username是否有效
-      if (!username || username === 'undefined' || username === 'null' || username === '') {
+      if (!username || username === 'undefined' || username === 'null' || username === '' || username === 'unknown') {
         console.warn('🖼️ UserAvatar: 无效的用户名:', username);
         setError(true);
         setIsLoading(false);

@@ -17,6 +17,7 @@ import TokenCleaner from '../components/TokenCleaner';
 import HtmlContent from '../components/HtmlContent';
 import { compressImages, validateImageFile, buildImageUrl, fixImageUrlsInContent } from '../utils/imageUtils';
 import { tokenSync } from '../utils/tokenSync';
+import { getSafePostAuthor, getSafeUserId } from '../utils/globalCleanup';
 
 const ForumPage: React.FC = () => {
   const navigate = useNavigate();
@@ -660,7 +661,18 @@ const ForumPage: React.FC = () => {
                   </div>
                 ) : (
                   sortedPosts.map((post) => {
-                    const avatarUrl = getUserAvatar(post.author);
+                    // 安全获取作者信息
+                    const author = getSafePostAuthor(post);
+                    const authorId = getSafeUserId(post.author_id || post.user_id);
+                    
+                    console.log('📝 ForumPage渲染帖子:', {
+                      postId: post.id,
+                      author: author,
+                      authorId: authorId,
+                      authorType: typeof author
+                    });
+                    
+                    const avatarUrl = getUserAvatar(author);
                     const lastReplyTime = post.replies && post.replies.length > 0 ? formatTimeAgo(post.replies[post.replies.length - 1].createdAt) : formatTimeAgo(post.timestamp);
                     return (
                       <div key={post.id} className="block bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:border-emerald-400 transition-all duration-300 overflow-hidden"
@@ -676,27 +688,27 @@ const ForumPage: React.FC = () => {
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  if (post.author_id && post.author_id !== user?.id) {
+                                  if (authorId && authorId !== user?.id) {
                                     openChatWith({
-                                      id: post.author_id,
-                                      username: post.author,
+                                      id: authorId,
+                                      username: author,
                                       avatar: avatarUrl
                                     });
                                   }
                                 }}
                                 className="cursor-pointer hover:scale-105 transition-transform"
-                                title={`与 ${post.author} 私信`}
+                                title={`与 ${author} 私信`}
                               >
                                 <UserAvatar 
-                                  username={post.author} 
+                                  username={author} 
                                   size="lg"
                                   className="w-16 h-16 border-2 border-white/20"
                                 />
                               </div>
                               <div className="text-center w-full">
-                                <div className="font-semibold text-white text-sm mb-1 truncate">{post.author}</div>
+                                <div className="font-semibold text-white text-sm mb-1 truncate">{author}</div>
                                 <div className="w-full flex items-center justify-center">
-                                  <UserLevelComponent username={post.author} />
+                                  <UserLevelComponent username={author} />
                                 </div>
                               </div>
                             </div>
