@@ -1,9 +1,0 @@
-{
-  "name": "oldksports-production",
-  "version": "1.0.0",
-  "description": "OldKSports Production Project",
-  "private": true,
-  "scripts": {
-    "install:all": "cd client && npm install && cd ../server && npm install"
-  }
-}
