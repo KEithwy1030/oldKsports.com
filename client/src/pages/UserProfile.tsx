@@ -238,7 +238,7 @@ const UserProfile: React.FC = () => {
       console.log('URL length:', croppedImageUrl.length);
       console.log('URL starts with data:image:', croppedImageUrl.startsWith('data:image'));
       
-      // 强制压缩头像到VARCHAR(255)限制内
+      // 强制压缩头像到VARCHAR(255)限制内 - 多重压缩策略
       const compressAvatar = (dataUrl: string): Promise<string> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
@@ -246,32 +246,59 @@ const UserProfile: React.FC = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // 计算压缩后的尺寸（保持宽高比）
-            const maxSize = 100; // 最大100px，确保Base64数据足够小
-            let { width, height } = img;
-            if (width > height) {
-              if (width > maxSize) {
-                height = (height * maxSize) / width;
-                width = maxSize;
+            // 多重压缩策略：从大到小尝试
+            const compressionLevels = [
+              { maxSize: 50, quality: 0.1 },   // 第一级：50px, 10%质量
+              { maxSize: 40, quality: 0.05 },  // 第二级：40px, 5%质量
+              { maxSize: 30, quality: 0.03 }, // 第三级：30px, 3%质量
+              { maxSize: 25, quality: 0.02 },  // 第四级：25px, 2%质量
+              { maxSize: 20, quality: 0.01 }  // 第五级：20px, 1%质量
+            ];
+            
+            let bestResult = '';
+            let currentLevel = 0;
+            
+            const tryCompression = () => {
+              if (currentLevel >= compressionLevels.length) {
+                // 所有级别都尝试过了，返回最后一个结果
+                console.log('所有压缩级别都尝试过了，最终长度:', bestResult.length);
+                resolve(bestResult);
+                return;
               }
-            } else {
-              if (height > maxSize) {
-                width = (width * maxSize) / height;
-                height = maxSize;
+              
+              const { maxSize, quality } = compressionLevels[currentLevel];
+              let { width, height } = img;
+              
+              if (width > height) {
+                if (width > maxSize) {
+                  height = (height * maxSize) / width;
+                  width = maxSize;
+                }
+              } else {
+                if (height > maxSize) {
+                  width = (width * maxSize) / height;
+                  height = maxSize;
+                }
               }
-            }
+              
+              canvas.width = width;
+              canvas.height = height;
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+              console.log(`压缩级别${currentLevel + 1}: ${maxSize}px, 质量${quality}, 长度: ${compressedDataUrl.length}`);
+              
+              if (compressedDataUrl.length <= 255) {
+                console.log('压缩成功！长度:', compressedDataUrl.length);
+                resolve(compressedDataUrl);
+              } else {
+                bestResult = compressedDataUrl;
+                currentLevel++;
+                setTimeout(tryCompression, 0); // 异步尝试下一级别
+              }
+            };
             
-            canvas.width = width;
-            canvas.height = height;
-            
-            // 绘制压缩后的图片
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // 转换为Base64，使用最低质量
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.3);
-            
-            console.log('压缩后头像长度:', compressedDataUrl.length);
-            resolve(compressedDataUrl);
+            tryCompression();
           };
           img.onerror = reject;
           img.src = dataUrl;
@@ -283,7 +310,7 @@ const UserProfile: React.FC = () => {
         const compressedAvatar = await compressAvatar(croppedImageUrl);
         
         if (compressedAvatar.length > 255) {
-          alert('头像图片过大，请选择较小的图片');
+          alert(`头像图片过大（${compressedAvatar.length}字符），请选择更小的图片或使用更简单的图片`);
           setIsUploading(false);
           return;
         }
