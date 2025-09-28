@@ -40,13 +40,11 @@ console.log('CORS Environment Variable:', process.env.CORS_ORIGIN);
 app.use(cors({ 
   origin: (origin, callback) => {
     console.log('CORS Request Origin:', origin);
-    // 拒绝undefined origin，只允许明确的域名
+    // 允许直接访问（无Origin头）和明确的域名
     if (!origin) {
-      console.log('CORS Blocked: No origin header');
-      callback(new Error('No origin header'));
-      return;
-    }
-    if (corsOrigins.includes(origin)) {
+      console.log('CORS Allowed: Direct access (no origin header)');
+      callback(null, true);
+    } else if (corsOrigins.includes(origin)) {
       console.log('CORS Allowed:', origin);
       callback(null, true);
     } else {
@@ -153,7 +151,17 @@ app.get("/health", (req, res) => {
 });
 // 根路径返回200，避免部分端口检测脚本把 GET / 视为探活
 app.get('/', (req, res) => {
-  res.status(200).send('OK');
+  res.json({
+    success: true,
+    message: 'OldKSports Backend API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      docs: '/api/docs'
+    },
+    timestamp: new Date().toISOString()
+  });
 });
 
 // 图片上传接口
