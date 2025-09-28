@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userAPI } from '../utils/api';
+import { checkUsernameBeforeApiCall } from '../utils/userIdValidator';
 import { getUserLevel } from '../utils/userUtils';
 import { UserLevel } from '../types';
 
@@ -21,9 +22,8 @@ const UserLevelComponent: React.FC<UserLevelProps> = ({ username, className = ''
         usernameLength: username ? username.length : 0
       });
       
-      // 检查username是否有效
-      if (!username || username === 'undefined' || username === 'null' || username === '' || username === 'unknown') {
-        console.warn('🏆 UserLevel: 无效的用户名:', username);
+      // 根据Agent建议：在API调用前检查用户名
+      if (!checkUsernameBeforeApiCall(username, 'UserLevel')) {
         setError(true);
         setIsLoading(false);
         return;

@@ -83,7 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('AuthContext初始化检查:', {
       hasToken: !!token,
       hasSavedUser: !!savedUser,
-      tokenLength: token ? token.length : 0
+      tokenLength: token ? token.length : 0,
+      savedUserContent: savedUser ? JSON.parse(savedUser) : null
     });
     
     if (token && savedUser) {
@@ -91,8 +92,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = JSON.parse(savedUser);
         
         // 验证用户数据完整性
+        console.log('🔍 解析用户数据:', {
+          id: userData.id,
+          username: userData.username,
+          idType: typeof userData.id,
+          usernameType: typeof userData.username,
+          hasId: !!userData.id,
+          hasUsername: !!userData.username
+        });
+        
         if (!userData.id || !userData.username) {
-          console.error('用户数据不完整:', userData);
+          console.error('🔍 用户数据不完整:', userData);
+          localStorage.removeItem('oldksports_auth_token');
+          localStorage.removeItem('oldksports_user');
+          setIsLoading(false);
+          return;
+        }
+        
+        // 确保用户ID是数字类型
+        const userId = parseInt(userData.id);
+        if (isNaN(userId) || userId <= 0) {
+          console.error('🔍 用户ID无效:', userData.id);
           localStorage.removeItem('oldksports_auth_token');
           localStorage.removeItem('oldksports_user');
           setIsLoading(false);

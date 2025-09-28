@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userAPI } from '../utils/api';
+import { checkUsernameBeforeApiCall } from '../utils/userIdValidator';
 import { showUserCard, hideUserCard, softHideUserCard } from './UserHoverCard';
 
 interface UserAvatarProps {
@@ -33,9 +34,8 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         usernameLength: username ? username.length : 0
       });
       
-      // 检查username是否有效
-      if (!username || username === 'undefined' || username === 'null' || username === '' || username === 'unknown') {
-        console.warn('🖼️ UserAvatar: 无效的用户名:', username);
+      // 根据Agent建议：在API调用前检查用户名
+      if (!checkUsernameBeforeApiCall(username, 'UserAvatar')) {
         setError(true);
         setIsLoading(false);
         return;

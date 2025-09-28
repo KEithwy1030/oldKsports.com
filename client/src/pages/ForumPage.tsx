@@ -28,8 +28,18 @@ const ForumPage: React.FC = () => {
     userExists: !!user,
     username: user?.username,
     isAdmin: user?.isAdmin,
-    userId: user?.id
+    userId: user?.id,
+    userType: typeof user,
+    usernameType: typeof user?.username,
+    userIdType: typeof user?.id
   });
+  
+  // 根据Agent建议：添加用户ID的空值检查
+  if (user && (!user.id || !user.username)) {
+    console.warn('🔍 ForumPage: 用户数据不完整，强制清理');
+    localStorage.removeItem('oldksports_auth_token');
+    localStorage.removeItem('oldksports_user');
+  }
   const [posts, setPosts] = useState<any[]>([]);
   const [showNewPostForm, setShowNewPostForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
