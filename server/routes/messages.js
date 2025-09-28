@@ -57,8 +57,24 @@ router.get('/users', authenticateToken, async (req, res) => {
 // 获取与特定用户的对话消息
 router.get('/conversation/:userId', authenticateToken, async (req, res) => {
   try {
+    console.log('🔍 获取对话消息请求:', {
+      currentUserId: req.user?.id,
+      otherUserId: req.params.userId,
+      user: req.user
+    });
+    
     const currentUserId = req.user.id;
     const otherUserId = parseInt(req.params.userId);
+    
+    if (!currentUserId) {
+      console.error('❌ 用户未认证');
+      return res.status(401).json({ success: false, error: '用户未认证' });
+    }
+    
+    if (!otherUserId || isNaN(otherUserId)) {
+      console.error('❌ 无效的用户ID:', req.params.userId);
+      return res.status(400).json({ success: false, error: '无效的用户ID' });
+    }
     
     const query = `
       SELECT 
@@ -72,19 +88,23 @@ router.get('/conversation/:userId', authenticateToken, async (req, res) => {
       ORDER BY m.created_at ASC
     `;
     
+    console.log('📝 执行查询:', query);
+    console.log('📝 查询参数:', [currentUserId, otherUserId, otherUserId, currentUserId]);
+    
     getDb().query(query, [currentUserId, otherUserId, otherUserId, currentUserId], (err, results) => {
       if (err) {
-        console.error('获取对话消息失败:', err);
+        console.error('❌ 获取对话消息失败:', err);
         return res.status(500).json({ success: false, error: '获取消息失败' });
       }
       
+      console.log('✅ 获取对话消息成功，消息数量:', results.length);
       res.json({
         success: true,
         data: results
       });
     });
   } catch (error) {
-    console.error('获取对话消息错误:', error);
+    console.error('❌ 获取对话消息错误:', error);
     res.status(500).json({ success: false, error: '服务器错误' });
   }
 });

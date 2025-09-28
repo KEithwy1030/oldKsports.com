@@ -198,6 +198,26 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/merchants", merchantsRoutes);
 
+// 添加通用错误处理中间件
+app.use((err, req, res, next) => {
+  console.error('🚨 服务器错误:', err);
+  res.status(500).json({ 
+    success: false, 
+    error: '服务器内部错误',
+    message: err.message 
+  });
+});
+
+// 处理未匹配的路由
+app.use('*', (req, res) => {
+  console.log('❌ 未找到路由:', req.originalUrl);
+  res.status(404).json({ 
+    success: false, 
+    error: 'API路由未找到',
+    path: req.originalUrl 
+  });
+});
+
 // 检查当前用户权限的API端点
 app.get("/api/admin/check", authenticateToken, async (req, res) => {
   try {
