@@ -287,8 +287,6 @@ const UserProfile: React.FC = () => {
           setIsUploading(false);
           return;
         }
-      
-      try {
         // 添加时间戳避免缓存问题
         const timestampedAvatar = `${croppedImageUrl}#${Date.now()}`;
         
