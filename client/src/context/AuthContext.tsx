@@ -50,6 +50,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const avatarUpdateListeners = useRef<((user: User) => void)[]>([]);
+  
+  // 紧急防护：确保用户数据完整性
+  const getSafeUser = useCallback(() => {
+    if (!user || !user.id || !user.username) {
+      console.warn('AuthContext: 用户数据不完整，返回null');
+      return null;
+    }
+    return user;
+  }, [user]);
 
   useEffect(() => {
     const token = localStorage.getItem('oldksports_auth_token');
@@ -474,9 +483,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{
-      user, isLoading, isAuthenticated, login, register, logout, updateUserPoints, updateUser, recalculateUserLevel, refreshUserData, checkHealth, checkDatabase,
-      getBotAccounts, addBotAccounts, updateBotAccount, getForumPosts, addForumPost, updateForumPost,
-      addForumReply, incrementPostViews, addReplyToPost, onAvatarUpdate, removeAvatarUpdateListener
+      user: getSafeUser(), 
+      isLoading, 
+      isAuthenticated: isAuthenticated && !!getSafeUser(), 
+      login, 
+      register, 
+      logout, 
+      updateUserPoints, 
+      updateUser, 
+      recalculateUserLevel, 
+      refreshUserData, 
+      checkHealth, 
+      checkDatabase,
+      getBotAccounts, 
+      addBotAccounts, 
+      updateBotAccount, 
+      getForumPosts, 
+      addForumPost, 
+      updateForumPost,
+      addForumReply, 
+      incrementPostViews, 
+      addReplyToPost, 
+      onAvatarUpdate, 
+      removeAvatarUpdateListener
     }}>
       {children}
     </AuthContext.Provider>

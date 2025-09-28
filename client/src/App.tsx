@@ -26,6 +26,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ChatWidget from './components/ChatWidget';
 import ChatHandlerSetup from './components/ChatHandlerSetup';
+import EmergencyGuard from './components/EmergencyGuard';
 import { initUserHoverAutobind } from './components/UserHoverCard';
 
 function App() {
@@ -34,12 +35,13 @@ function App() {
   return (
     <AuthProvider>
       <ChatProvider>
-        <ChatHandlerSetup />
-        <UserLevelSync />
-        <Router>
-          <div className="min-h-screen">
-            <Navigation />
-            <Routes>
+        <EmergencyGuard>
+          <ChatHandlerSetup />
+          <UserLevelSync />
+          <Router>
+            <div className="min-h-screen">
+              <Navigation />
+              <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<AuthPage mode="login" />} />
             <Route path="/register" element={<AuthPage mode="register" />} />
@@ -65,6 +67,7 @@ function App() {
           <ChatWidget />
         </div>
       </Router>
+        </EmergencyGuard>
       </ChatProvider>
     </AuthProvider>
   );

@@ -49,7 +49,7 @@ function getCurrentUserId(): number | null {
     const raw = localStorage.getItem('oldksports_user');
     if (!raw) return null;
     const u = JSON.parse(raw);
-    if (typeof u?.id === 'number') return u.id;
+    if (typeof u?.id === 'number' && u.id > 0) return u.id;
     return null;
   } catch {
     return null;
@@ -75,6 +75,12 @@ function ensureContainer() {
 }
 
 async function getUser(username: string, forceRefresh = false): Promise<CachedUser> {
+  // 紧急防护：检查username有效性
+  if (!username || username === 'undefined' || username === 'null') {
+    console.warn('🔥 getUser: 无效的用户名:', username);
+    return { username: username || 'unknown' };
+  }
+  
   console.log('🔥 getUser 被调用:', username, forceRefresh);
   const cached = cache.get(username);
   if (!forceRefresh && cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
