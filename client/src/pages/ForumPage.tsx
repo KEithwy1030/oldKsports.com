@@ -185,9 +185,13 @@ const ForumPage: React.FC = () => {
         return;
       }
       
-      console.log('发送删除请求:', `/api/posts/${postId}`);
+      // 构建正确的API URL
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const deleteUrl = `${apiUrl}/posts/${postId}`;
       
-      const response = await fetch(`/api/posts/${postId}`, {
+      console.log('发送删除请求:', deleteUrl);
+      
+      const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

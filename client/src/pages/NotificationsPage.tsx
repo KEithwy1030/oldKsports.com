@@ -113,7 +113,8 @@ const NotificationsPage: React.FC = () => {
   // 删除通知
   const deleteNotification = async (notificationId: number) => {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('oldksports_auth_token')}`
