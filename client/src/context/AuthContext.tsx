@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const avatarUpdateListeners = useRef<((user: User) => void)[]>([]);
   
-  // 紧急防护：确保用户数据完整性
+  // 紧急防护：确保用户数据完整性（更宽松的检查）
   const getSafeUser = useCallback(() => {
     console.log('🔍 AuthContext getSafeUser检查:', {
       hasUser: !!user,
@@ -61,13 +61,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userType: typeof user
     });
     
-    if (!user || !user.id || !user.username) {
-      console.warn('🔍 AuthContext: 用户数据不完整，返回null');
+    // 只在真正异常时才返回null，给正常用户更多容错空间
+    if (!user) {
+      console.warn('🔍 AuthContext: 用户对象不存在，返回null');
       return null;
     }
     
-    if (!validateUserData(user)) {
-      console.warn('🔍 AuthContext: 用户数据验证失败，强制清理');
+    // 检查关键字段，但允许部分字段为空
+    if (!user.id || !user.username) {
+      console.warn('🔍 AuthContext: 用户关键数据缺失，返回null');
+      return null;
+    }
+    
+    // 只在数据明显损坏时才强制清理
+    if (user.username === 'undefined' || user.username === 'null' || user.id === 'undefined' || user.id === 'null') {
+      console.warn('🔍 AuthContext: 用户数据明显损坏，强制清理');
       forceCleanup();
       return null;
     }
@@ -91,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const userData = JSON.parse(savedUser);
         
-        // 验证用户数据完整性
+        // 验证用户数据完整性（更宽松的检查）
         console.log('🔍 解析用户数据:', {
           id: userData.id,
           username: userData.username,
@@ -101,15 +109,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           hasUsername: !!userData.username
         });
         
-        if (!userData.id || !userData.username) {
-          console.error('🔍 用户数据不完整:', userData);
+        // 只在数据明显损坏时才清理
+        if (!userData.id || !userData.username || 
+            userData.username === 'undefined' || userData.username === 'null' ||
+            userData.id === 'undefined' || userData.id === 'null') {
+          console.error('🔍 用户数据明显损坏:', userData);
           localStorage.removeItem('oldksports_auth_token');
           localStorage.removeItem('oldksports_user');
           setIsLoading(false);
           return;
         }
         
-        // 确保用户ID是数字类型
+        // 确保用户ID是数字类型，但允许更多容错
         const userId = parseInt(userData.id);
         if (isNaN(userId) || userId <= 0) {
           console.error('🔍 用户ID无效:', userData.id);

@@ -1,6 +1,5 @@
 // 紧急防护组件 - 防止undefined错误
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 interface EmergencyGuardProps {
@@ -17,7 +16,6 @@ const EmergencyGuard: React.FC<EmergencyGuardProps> = ({
     </div>
   </div>
 }) => {
-  const navigate = useNavigate();
   const { user, isLoading, isAuthenticated } = useAuth();
   
   console.log('🚨 EmergencyGuard检查:', {
@@ -36,8 +34,8 @@ const EmergencyGuard: React.FC<EmergencyGuardProps> = ({
     return <>{fallback}</>;
   }
   
-  // 如果用户数据不完整，显示错误状态
-  if (!isAuthenticated || !user || !user.id || !user.username) {
+  // 只有在真正异常时才显示错误状态（更宽松的检查）
+  if (!isLoading && isAuthenticated && (!user || !user.id || !user.username)) {
     console.warn('EmergencyGuard: 用户数据不完整，显示错误状态', {
       isAuthenticated,
       hasUser: !!user,
@@ -45,7 +43,7 @@ const EmergencyGuard: React.FC<EmergencyGuardProps> = ({
       username: user?.username
     });
     
-    // 清理可能损坏的localStorage数据
+    // 只在确认数据损坏时才清理localStorage
     try {
       localStorage.removeItem('oldksports_auth_token');
       localStorage.removeItem('oldksports_user');
@@ -61,42 +59,13 @@ const EmergencyGuard: React.FC<EmergencyGuardProps> = ({
           <div className="text-red-500 mb-4">⚠️ 用户数据异常</div>
           <p className="mb-4">请重新登录</p>
           <button 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('EmergencyGuard: 点击重新登录按钮', {
-                event: e,
-                target: e.target,
-                currentTarget: e.currentTarget
-              });
-              
-              try {
-                // 强制清理所有数据
-                localStorage.clear();
-                sessionStorage.clear();
-                console.log('EmergencyGuard: 已清理所有存储数据');
-                
-                // 优先使用React Router导航
-                try {
-                  console.log('EmergencyGuard: 使用React Router导航到登录页');
-                  navigate('/login', { replace: true });
-                  console.log('EmergencyGuard: React Router导航调用完成');
-                } catch (routerError) {
-                  console.warn('EmergencyGuard: React Router导航失败，使用window.location:', routerError);
-                  // 备用方案：使用window.location
-                  setTimeout(() => {
-                    console.log('EmergencyGuard: 使用window.location跳转到登录页');
-                    window.location.href = '/login';
-                  }, 100);
-                }
-              } catch (error) {
-                console.error('EmergencyGuard: 跳转失败:', error);
-                // 最后备用方案：直接刷新页面
-                window.location.reload();
-              }
+            onClick={() => {
+              // 强制清理所有数据并重新加载
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.href = '/login';
             }} 
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors cursor-pointer"
-            type="button"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             重新登录
           </button>
