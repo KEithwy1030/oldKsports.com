@@ -15,6 +15,14 @@ const UserLevelComponent: React.FC<UserLevelProps> = ({ username, className = ''
 
   useEffect(() => {
     const fetchUserLevel = async () => {
+      // 检查username是否有效
+      if (!username || username === 'undefined') {
+        console.warn('UserLevel: 无效的用户名:', username);
+        setError(true);
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       setError(false);
       try {

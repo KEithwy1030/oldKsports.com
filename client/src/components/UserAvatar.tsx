@@ -27,10 +27,19 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
   useEffect(() => {
     const fetchAvatar = async () => {
+      // 检查username是否有效
+      if (!username || username === 'undefined') {
+        console.warn('UserAvatar: 无效的用户名:', username);
+        setError(true);
+        setIsLoading(false);
+        return;
+      }
+      
       try {
         setIsLoading(true);
         setError(false);
         
+        console.log('UserAvatar: 获取头像:', username);
         const response = await userAPI.getAvatar(username);
         if (response.success) {
           setAvatar(response.avatar);

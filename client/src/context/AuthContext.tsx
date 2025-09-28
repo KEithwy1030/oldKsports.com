@@ -55,9 +55,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = localStorage.getItem('oldksports_auth_token');
     const savedUser = localStorage.getItem('oldksports_user');
     
+    console.log('AuthContext初始化检查:', {
+      hasToken: !!token,
+      hasSavedUser: !!savedUser,
+      tokenLength: token ? token.length : 0
+    });
+    
     if (token && savedUser) {
       try {
         const userData = JSON.parse(savedUser);
+        
+        // 验证用户数据完整性
+        if (!userData.id || !userData.username) {
+          console.error('用户数据不完整:', userData);
+          localStorage.removeItem('oldksports_auth_token');
+          localStorage.removeItem('oldksports_user');
+          setIsLoading(false);
+          return;
+        }
         
         // 确保所有字段正确映射，特别是isAdmin字段和日期字段
         const processedUserData = {
@@ -69,10 +84,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('AuthContext初始化 - 从localStorage加载用户数据:', userData);
         console.log('AuthContext初始化 - 处理后的用户数据:', processedUserData);
-        console.log('用户头像数据:', {
-          hasAvatar: !!processedUserData.avatar,
-          avatarLength: processedUserData.avatar?.length,
-          hasUploadedAvatar: processedUserData.hasUploadedAvatar
+        console.log('用户ID验证:', {
+          id: processedUserData.id,
+          idType: typeof processedUserData.id,
+          username: processedUserData.username
         });
         
         setUser(processedUserData);
