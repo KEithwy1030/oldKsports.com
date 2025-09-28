@@ -9,8 +9,11 @@
 export const buildImageUrl = (imagePath: string): string => {
   if (!imagePath) return '';
   
+  console.log('🖼️ buildImageUrl 输入:', imagePath);
+  
   // 放行 data:/blob: 这类内联或临时URL（用于刚发表的回复）
   if (imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+    console.log('🖼️ 内联URL，直接返回:', imagePath);
     return imagePath;
   }
 
@@ -31,21 +34,28 @@ export const buildImageUrl = (imagePath: string): string => {
   
   // 获取API基础URL
   const apiUrl = import.meta.env.VITE_API_URL || '/api';
+  console.log('🖼️ API URL:', apiUrl);
   
   // 本地开发环境：API URL是 /api，需要替换为后端地址
   if (apiUrl === '/api') {
     // 本地开发时，使用环境变量或默认后端地址
-    const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:8080');
-    return `${backendUrl}${normalizedPath}`;
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:3000');
+    const result = `${backendUrl}${normalizedPath}`;
+    console.log('🖼️ 本地开发URL:', result);
+    return result;
   }
   
   // 生产环境：API URL是完整URL，替换 /api 为根路径
   if (apiUrl.startsWith('http')) {
-    return apiUrl.replace('/api', '') + normalizedPath;
+    const result = apiUrl.replace('/api', '') + normalizedPath;
+    console.log('🖼️ 生产环境URL:', result);
+    return result;
   }
   
   // 兜底方案：使用当前域名
-  return window.location.origin + normalizedPath;
+  const result = window.location.origin + normalizedPath;
+  console.log('🖼️ 兜底URL:', result);
+  return result;
 };
 
 /**
@@ -83,7 +93,7 @@ export const fixImageUrlsInContent = (content: string): string => {
   if (!content) return content;
   
   // 先处理历史数据中的绝对URL，将3001端口统一替换为当前后端地址
-  const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:8080');
+  const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:3000');
   let fixedContent = content.replace(
     /http:\/\/localhost:3001(\/uploads\/images\/[^"]*)/g,
     `${backendUrl}$1`
