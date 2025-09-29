@@ -229,4 +229,82 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// 发送测试通知给所有用户（管理员功能）
+router.post('/send-test', authenticateToken, async (req, res) => {
+  try {
+    // 检查是否为管理员
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ 
+        success: false, 
+        error: '只有管理员可以发送测试通知' 
+      });
+    }
+    
+    console.log('🚀 管理员发送测试通知请求');
+    
+    // 获取所有用户
+    const users = await new Promise((resolve, reject) => {
+      getDb().query('SELECT id, username FROM users', (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
+      });
+    });
+    
+    console.log(`📊 找到 ${users.length} 个用户`);
+    
+    // 为每个用户创建测试通知
+    const results = [];
+    for (const user of users) {
+      try {
+        const query = `
+          INSERT INTO notifications (user_id, title, message, type, is_read)
+          VALUES (?, ?, ?, ?, ?)
+        `;
+        
+        await new Promise((resolve, reject) => {
+          getDb().query(query, [
+            user.id,
+            '🎉 系统测试通知',
+            `您好 ${user.username}！\n\n这是一个系统测试通知，用于验证通知功能是否正常工作。\n\n如果您能看到这条通知，说明通知系统已经成功修复！\n\n感谢您的耐心等待！`,
+            'system',
+            false
+          ], (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        });
+        
+        console.log(`✅ 用户 ${user.username} (ID: ${user.id}) 通知创建成功`);
+        results.push({ userId: user.id, username: user.username, success: true });
+      } catch (error) {
+        console.error(`❌ 用户 ${user.username} (ID: ${user.id}) 通知创建失败:`, error.message);
+        results.push({ userId: user.id, username: user.username, success: false, error: error.message });
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+    
+    console.log(`📋 测试通知发送完成: 成功 ${successCount}, 失败 ${failCount}`);
+    
+    res.json({
+      success: true,
+      message: '测试通知发送完成',
+      data: {
+        totalUsers: users.length,
+        successCount,
+        failCount,
+        results
+      }
+    });
+  } catch (error) {
+    console.error('❌ 发送测试通知失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '发送测试通知失败',
+      details: error.message 
+    });
+  }
+});
+
 export default router;
