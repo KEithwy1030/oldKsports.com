@@ -79,6 +79,9 @@ router.get('/list', authenticateToken, async (req, res) => {
       LIMIT ? OFFSET ?
     `;
     
+    console.log('🔔 完整SQL查询:', query);
+    console.log('🔔 查询参数详情:', queryParams);
+    
     queryParams.push(parseInt(limit), parseInt(offset));
     
     console.log('🔔 获取通知列表查询:', query);
@@ -86,11 +89,25 @@ router.get('/list', authenticateToken, async (req, res) => {
     
     getDb().query(query, queryParams, (err, results) => {
       if (err) {
-        console.error('❌ 获取通知列表失败:', err);
-        return res.status(500).json({ success: false, error: '获取通知失败' });
+        console.error('❌ 获取通知列表失败:', {
+          error: err.message,
+          code: err.code,
+          errno: err.errno,
+          sqlState: err.sqlState,
+          sql: query,
+          params: queryParams
+        });
+        return res.status(500).json({ 
+          success: false, 
+          error: '获取通知失败',
+          details: err.message 
+        });
       }
       
-      console.log('🔔 通知查询结果:', results);
+      console.log('🔔 通知查询结果:', {
+        count: results.length,
+        results: results
+      });
       
       res.json({
         success: true,
