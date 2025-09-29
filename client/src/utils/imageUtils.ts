@@ -17,6 +17,12 @@ export const buildImageUrl = (imagePath: string): string => {
     VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
   });
   
+  // 环境变量验证
+  if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+    console.error('❌ 生产环境缺少 VITE_API_URL，使用兜底方案');
+    return window.location.origin + (imagePath.startsWith('/') ? imagePath : `/${imagePath}`);
+  }
+  
   // 放行 data:/blob: 这类内联或临时URL（用于刚发表的回复）
   if (imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
     console.log('🖼️ 内联URL，直接返回:', imagePath);

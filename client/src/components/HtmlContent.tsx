@@ -1,6 +1,7 @@
 import React from 'react';
 import DOMPurify from 'dompurify';
 import { buildImageUrl, fixImageUrlsInContent } from '../utils/imageUtils';
+import { fixHistoricalImageUrls, needsImageUrlFix } from '../utils/imageUrlFixer';
 
 interface HtmlContentProps {
   content: string;
@@ -8,8 +9,13 @@ interface HtmlContentProps {
 }
 
 const HtmlContent: React.FC<HtmlContentProps> = ({ content, className }) => {
-  // 先修复图片URL，确保图片能正确显示
-  const fixedContent = fixImageUrlsInContent(content);
+  // 检查是否需要修复历史图片URL
+  const needsFix = needsImageUrlFix(content);
+  console.log('🔧 HtmlContent 是否需要修复:', needsFix);
+  
+  // 先修复历史图片URL，再修复图片URL，确保图片能正确显示
+  const historicalFixed = needsFix ? fixHistoricalImageUrls(content) : content;
+  const fixedContent = fixImageUrlsInContent(historicalFixed);
   
   // 使用DOMPurify清理HTML内容，防止XSS攻击
   const sanitizedContent = DOMPurify.sanitize(fixedContent, {
