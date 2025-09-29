@@ -5,6 +5,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { getDb } from '../db.js';
 import fs from 'fs';
 import path from 'path';
+import fetch from 'node-fetch';
 
 const router = express.Router();
 
@@ -190,68 +191,6 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
   } catch (error) {
     console.error('删除用户失败:', error);
     res.status(500).json({ success: false, error: '删除用户失败' });
-  }
-});
-
-// 一次性迁移：将帖子与回复内容中的 base64 图片提取为文件并替换为 /uploads/images 路径
-// GET 试运行：?commit=0（默认）只返回将要变更的条目统计；?commit=1 执行写入
-router.get('/maintenance/migrate-base64-images', authenticateToken, requireAdmin, async (req, res) => {
-  const commit = String(req.query.commit || '0') === '1';
-  const uploadsRoot = path.join(process.cwd(), 'public', 'uploads', 'images');
-  try {
-    if (!fs.existsSync(uploadsRoot)) fs.mkdirSync(uploadsRoot, { recursive: true });
-  } catch (e) {}
-
-  const dbQuery = (sql, params=[]) => new Promise((resolve, reject) => {
-    db.query(sql, params, (err, result) => err ? reject(err) : resolve(result));
-  });
-
-  const imgRegex = /<img[^>]+src=["'](data:image\/(png|jpeg|jpg|webp);base64,[^"']+)["'][^>]*>/gi;
-
-  const scanAndReplace = async (table, idField, contentField) => {
-    const rows = await dbQuery(`SELECT ${idField}, ${contentField} FROM ${table}`);
-    let touched = 0, files = 0;
-    const changes = [];
-    for (const row of rows) {
-      const id = row[idField];
-      const html = row[contentField] || '';
-      if (!html) continue;
-      let modified = html;
-      let m;
-      imgRegex.lastIndex = 0;
-      while ((m = imgRegex.exec(html)) !== null) {
-        const dataUrl = m[1];
-        try {
-          const [, mime] = dataUrl.match(/^data:(image\/(png|jpeg|jpg|webp));base64,/i) || [];
-          const ext = mime?.split('/')[1] || 'png';
-          const base64 = dataUrl.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/i, '');
-          const buf = Buffer.from(base64, 'base64');
-          const filename = `migr_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
-          const filePath = path.join(uploadsRoot, filename);
-          if (commit) fs.writeFileSync(filePath, buf);
-          const url = `/uploads/images/${filename}`;
-          modified = modified.replace(dataUrl, url);
-          files++;
-        } catch (_) {}
-      }
-      if (modified !== html) {
-        touched++;
-        changes.push({ table, id, beforeBytes: Buffer.byteLength(html), afterBytes: Buffer.byteLength(modified) });
-        if (commit) {
-          await dbQuery(`UPDATE ${table} SET ${contentField} = ? WHERE ${idField} = ?`, [modified, id]);
-        }
-      }
-    }
-    return { touched, files, changes };
-  };
-
-  try {
-    const posts = await scanAndReplace('forum_posts', 'id', 'content');
-    const replies = await scanAndReplace('forum_replies', 'id', 'content');
-    res.json({ success: true, commit, summary: { posts, replies } });
-  } catch (error) {
-    console.error('迁移base64图片失败:', error);
-    res.status(500).json({ success: false, error: '迁移失败', details: String(error?.message || error) });
   }
 });
 

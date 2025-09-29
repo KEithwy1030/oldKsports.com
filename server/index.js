@@ -16,6 +16,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { getDb } from "./db.js";
+import path from "path";
 
 dotenv.config();
 
@@ -214,6 +215,85 @@ console.log('使用静态文件路径:', staticPath);
 app.use('/uploads/images', express.static(staticPath));
 // 兼容旧的URL路径（直接/uploads/文件名）  
 app.use('/uploads', express.static(staticPath));
+
+// 一次性迁移任务：把帖子与回复里的 data:image 内联图片落盘并替换为 /uploads/images/ 路径
+async function migrateInlineImagesOnce() {
+  try {
+    const db = getDb();
+    // 读取帖子
+    const posts = await new Promise((resolve, reject) => {
+      db.query('SELECT id, content FROM forum_posts', (err, rows) => err ? reject(err) : resolve(rows));
+    });
+    // 读取回复
+    const replies = await new Promise((resolve, reject) => {
+      db.query('SELECT id, content FROM forum_replies', (err, rows) => err ? reject(err) : resolve(rows));
+    });
+
+    const ensureDir = (dir) => { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); };
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'images');
+    ensureDir(uploadsDir);
+
+    const saveDataUrl = async (dataUrl) => {
+      const match = /^data:(.*?);base64,(.*)$/.exec(dataUrl);
+      if (!match) return null;
+      const mime = match[1] || 'image/jpeg';
+      const base64 = match[2];
+      const ext = mime.split('/')[1] || 'jpg';
+      const filename = `migr_${Date.now()}_${Math.floor(Math.random()*1e6)}.${ext}`;
+      const abs = path.join(uploadsDir, filename);
+      const buf = Buffer.from(base64, 'base64');
+      fs.writeFileSync(abs, buf);
+      return `/uploads/images/${filename}`;
+    };
+
+    const replaceInline = async (html) => {
+      if (!html || typeof html !== 'string') return html;
+      const re = /<img[^>]+src=["'](data:image\/[a-zA-Z0-9+.-]+;base64,[^"']+)["'][^>]*>/g;
+      let out = html;
+      const tasks = [];
+      let m;
+      while ((m = re.exec(html)) !== null) {
+        const dataUrl = m[1];
+        tasks.push((async () => {
+          const newPath = await saveDataUrl(dataUrl);
+          if (newPath) {
+            out = out.replace(dataUrl, newPath);
+          }
+        })());
+      }
+      await Promise.all(tasks);
+      return out;
+    };
+
+    const updatePost = (id, content) => new Promise((resolve, reject) => {
+      db.query('UPDATE forum_posts SET content=? WHERE id=?', [content, id], (err) => err ? reject(err) : resolve());
+    });
+    const updateReply = (id, content) => new Promise((resolve, reject) => {
+      db.query('UPDATE forum_replies SET content=? WHERE id=?', [content, id], (err) => err ? reject(err) : resolve());
+    });
+
+    // 逐条处理（小批量）
+    for (const row of posts) {
+      const newHtml = await replaceInline(row.content);
+      if (newHtml && newHtml !== row.content) {
+        await updatePost(row.id, newHtml);
+      }
+    }
+    for (const row of replies) {
+      const newHtml = await replaceInline(row.content);
+      if (newHtml && newHtml !== row.content) {
+        await updateReply(row.id, newHtml);
+      }
+    }
+
+    console.log('✅ 内联图片迁移完成');
+  } catch (e) {
+    console.error('❌ 内联图片迁移失败:', e.message);
+  }
+}
+
+// 后台启动后异步执行，不阻塞服务
+setTimeout(() => migrateInlineImagesOnce(), 1000);
 // 兼容少数旧内容直接引用 /public/uploads/images 前缀
 app.use('/public/uploads/images', express.static(staticPath));
 
