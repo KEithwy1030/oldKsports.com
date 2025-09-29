@@ -91,6 +91,7 @@ export const register = async (req, res) => {
         
         const token = jwt.sign(
             { 
+                userId: newUsers[0].id,  // 修复字段名，与auth.js中的decoded.userId匹配
                 id: newUsers[0].id, 
                 username: newUsers[0].username, 
                 email: newUsers[0].email,
@@ -169,7 +170,13 @@ export const login = async (req, res) => {
         // Generate JWT token with expiration
         const jwtSecret = process.env.JWT_SECRET || "oldksports_jwt_secret_key_2024";
         const token = jwt.sign(
-            { userId: user.id }, 
+            { 
+                userId: user.id,
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                isAdmin: user.is_admin || false
+            }, 
             jwtSecret,
             { expiresIn: '7d' } // 7天过期
         );
