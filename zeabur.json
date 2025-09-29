@@ -16,7 +16,7 @@
       },
       "env": {
         "NODE_ENV": "production",
-        "VITE_API_URL": "https://oldksports-server.zeabur.app/api"
+        "VITE_API_URL": "https://oldksports.com/api"
       }
     },
     {
@@ -35,7 +35,7 @@
       "env": {
         "NODE_ENV": "production",
         "PORT": "3000",
-        "CORS_ORIGIN": "https://oldksports.zeabur.app",
+        "CORS_ORIGIN": "https://oldksports.com",
         "MYSQL_HOST": "${MYSQL_HOST}",
         "MYSQL_PORT": "3306",
         "MYSQL_USERNAME": "${MYSQL_USERNAME}",
