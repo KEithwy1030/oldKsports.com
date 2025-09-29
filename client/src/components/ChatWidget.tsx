@@ -53,7 +53,7 @@ const ChatWidget: React.FC = () => {
       }
       return prev;
     });
-  }, []);
+  }, []); // 空依赖数组，避免无限循环
 
   // 标记消息为已读
   const markMessagesAsRead = useCallback(async (userId: number) => {
@@ -111,7 +111,7 @@ const ChatWidget: React.FC = () => {
       setLocalSelectedUserId(selectedUserId);
       clearUnreadForUser(selectedUserId);
     }
-  }, [selectedUserId, localSelectedUserId, clearUnreadForUser]);
+  }, [selectedUserId, localSelectedUserId]); // 移除 clearUnreadForUser 依赖
 
   // 滚动到底部
   const scrollToBottom = () => {
