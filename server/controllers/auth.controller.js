@@ -53,14 +53,22 @@ export const register = async (req, res) => {
             
             // 创建系统欢迎通知
             try {
-                await NotificationService.createSystemNotification(
+                console.log('🔔 开始为新用户创建欢迎通知:', { newUserId, username });
+                const notificationResult = await NotificationService.createSystemNotification(
                     newUserId,
                     '欢迎加入OldkSports体育社区！',
                     `🎉 欢迎 ${username} 加入我们的体育社区！\n\n在这里您可以：\n• 📝 发布体育相关的帖子和讨论\n• 💬 与其他体育爱好者交流互动\n• 🏆 参与论坛活动，积累积分等级\n• 🔍 浏览优质商家和服务信息\n• 💌 通过私信功能与其他用户深入交流\n\n点击右上角用户名可以查看通知，点击其他用户头像可以发起私聊。祝您在社区中玩得愉快！`
                 );
-                console.log('新用户欢迎通知创建成功');
+                console.log('🔔 新用户欢迎通知创建成功:', notificationResult);
             } catch (notifyError) {
-                console.error('创建欢迎通知失败:', notifyError);
+                console.error('❌ 创建欢迎通知失败:', notifyError);
+                console.error('❌ 通知错误详情:', {
+                    message: notifyError.message,
+                    stack: notifyError.stack,
+                    code: notifyError.code,
+                    errno: notifyError.errno,
+                    sqlState: notifyError.sqlState
+                });
                 // 不影响注册流程
             }
         }

@@ -108,11 +108,11 @@ class NotificationService {
       }
 
       const query = `
-        INSERT INTO notifications (recipient_id, sender_id, type, title, content, related_post_id, related_reply_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO notifications (user_id, title, message, type, is_read)
+        VALUES (?, ?, ?, ?, ?)
       `;
 
-      getDb().query(query, [recipientId, senderId, type, title, content, relatedPostId, relatedReplyId], (err, result) => {
+      getDb().query(query, [recipientId, title, content, type, false], (err, result) => {
         if (err) {
           console.error('创建通知失败:', err);
           reject(err);
