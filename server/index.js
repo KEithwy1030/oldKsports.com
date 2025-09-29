@@ -13,7 +13,7 @@ import { authenticateToken } from "./middleware/auth.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
-import path from "path";
+import nodePath from "path";
 import fs from "fs";
 import { getDb } from "./db.js";
 
@@ -62,8 +62,8 @@ app.use(express.urlencoded({ limit: '1gb', extended: true }));
 app.use(cookieParser());
 
 // 确保上传目录存在
-const uploadsDir = path.join(process.cwd(), 'uploads', 'images');
-const publicUploadsDir = path.join(process.cwd(), 'public', 'uploads', 'images');
+const uploadsDir = nodePath.join(process.cwd(), 'uploads', 'images');
+const publicUploadsDir = nodePath.join(process.cwd(), 'public', 'uploads', 'images');
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -79,7 +79,7 @@ const migrateLegacyImages = () => {
       // 旧后端路径
       uploadsDir,
       // 旧前端构建前的静态路径（本地开发可能存在）
-      path.join(process.cwd(), '..', 'client', 'public', 'uploads', 'images')
+      nodePath.join(process.cwd(), '..', 'client', 'public', 'uploads', 'images')
     ];
 
     legacyDirs.forEach((dir) => {
@@ -87,8 +87,8 @@ const migrateLegacyImages = () => {
         if (!fs.existsSync(dir)) return;
         const files = fs.readdirSync(dir);
         files.forEach((file) => {
-          const src = path.join(dir, file);
-          const dst = path.join(publicUploadsDir, file);
+          const src = nodePath.join(dir, file);
+          const dst = nodePath.join(publicUploadsDir, file);
           try {
             if (fs.statSync(src).isFile()) {
               if (!fs.existsSync(dst)) {
@@ -119,7 +119,7 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     // 生成唯一文件名：时间戳_随机数_原文件名
     const uniqueSuffix = Date.now() + '_' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
+    const ext = nodePath.extname(file.originalname);
     cb(null, 'post_' + uniqueSuffix + ext);
   }
 });
@@ -140,7 +140,7 @@ const upload = multer({
 });
 
 // 静态文件服务 - 提供上传的图片访问
-app.use('/uploads/images', express.static(path.join(process.cwd(), 'public', 'uploads', 'images')));
+app.use('/uploads/images', express.static(nodePath.join(process.cwd(), 'public', 'uploads', 'images')));
 
 // Health check routes（提供两种路径，便于端口探活脚本使用）
 app.get("/api/health", (req, res) => {
@@ -204,11 +204,11 @@ app.post("/api/upload/images", upload.array('images', 9), (req, res) => {
 });
 
 // 静态文件服务 - 为上传的图片提供访问
-console.log('静态文件服务路径:', path.join(process.cwd(), 'public', 'uploads', 'images'));
+console.log('静态文件服务路径:', nodePath.join(process.cwd(), 'public', 'uploads', 'images'));
 console.log('当前工作目录:', process.cwd());
 
 // 使用相对路径，适配Zeabur部署
-const staticPath = path.join(process.cwd(), 'public', 'uploads', 'images');
+const staticPath = nodePath.join(process.cwd(), 'public', 'uploads', 'images');
 console.log('使用静态文件路径:', staticPath);
 
 app.use('/uploads/images', express.static(staticPath));
@@ -229,7 +229,7 @@ async function migrateInlineImagesOnce() {
     });
 
     const ensureDir = (dir) => { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); };
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'images');
+    const uploadsDir = nodePath.join(process.cwd(), 'public', 'uploads', 'images');
     ensureDir(uploadsDir);
 
     const saveDataUrl = async (dataUrl) => {
@@ -239,7 +239,7 @@ async function migrateInlineImagesOnce() {
       const base64 = match[2];
       const ext = mime.split('/')[1] || 'jpg';
       const filename = `migr_${Date.now()}_${Math.floor(Math.random()*1e6)}.${ext}`;
-      const abs = path.join(uploadsDir, filename);
+      const abs = nodePath.join(uploadsDir, filename);
       const buf = Buffer.from(base64, 'base64');
       fs.writeFileSync(abs, buf);
       return `/uploads/images/${filename}`;
