@@ -36,6 +36,10 @@ export const buildImageUrl = (imagePath: string): string => {
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     try {
       const url = new URL(imagePath);
+      // 所有 /uploads/images 统一强制回落到当前站点域名，避免跨域部署路径差异
+      if (url.pathname.startsWith('/uploads/images/')) {
+        return `${window.location.origin}${url.pathname}`;
+      }
       // 统一 localhost:3001 → 8080（历史本地）
       if (url.hostname === 'localhost' && url.port === '3001') {
         url.port = '';
@@ -45,10 +49,7 @@ export const buildImageUrl = (imagePath: string): string => {
       }
       // 统一旧的zeabur域名到自定义域名
       if (url.hostname === 'oldksports-app.zeabur.app' || url.hostname === 'oldksports-server.zeabur.app') {
-        const target = new URL(baseUrl);
-        url.protocol = target.protocol;
-        url.host = target.host;
-        return url.toString();
+        return `${window.location.origin}${url.pathname}`;
       }
     } catch {}
     return imagePath;
@@ -59,6 +60,13 @@ export const buildImageUrl = (imagePath: string): string => {
   
   console.log('🖼️ API URL:', apiUrl);
   
+  // 无论环境，只要是 /uploads/images 的相对路径，一律使用当前站点域名，避免受 API 域名影响
+  if (normalizedPath.startsWith('/uploads/images/')) {
+    const result = `${window.location.origin}${normalizedPath}`;
+    console.log('🖼️ uploads 统一当前域名URL:', result);
+    return result;
+  }
+
   // 本地开发环境：API URL是 /api，需要替换为后端地址
   if (apiUrl === '/api') {
     // 本地开发时，使用环境变量或默认后端地址
