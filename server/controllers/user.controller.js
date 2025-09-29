@@ -85,7 +85,7 @@ export const updateUserProfile = async (req, res) => {
         const updateData = req.body;
         
         // 构建动态更新SQL（只更新确实存在的字段）
-        const allowedFields = ['avatar', 'email', 'username', 'hasUploadedAvatar', 'roles'];
+        const allowedFields = ['avatar', 'email', 'username', 'hasUploadedAvatar'];
         const fieldsToUpdate = [];
         const values = [];
         
@@ -97,17 +97,13 @@ export const updateUserProfile = async (req, res) => {
                     fieldsToUpdate.push('has_uploaded_avatar = ?');
                     values.push(value ? 1 : 0);
                     console.log(`✅ 添加字段: has_uploaded_avatar = ${value ? 1 : 0}`);
-                } else if (key === 'roles') {
-                    // 处理roles字段，存储为JSON字符串
-                    fieldsToUpdate.push('roles = ?');
-                    const rolesJson = JSON.stringify(value);
-                    values.push(rolesJson);
-                    console.log(`✅ 添加字段: roles = ${rolesJson}`);
                 } else {
                     fieldsToUpdate.push(`${key} = ?`);
                     values.push(value);
                     console.log(`✅ 添加字段: ${key} = ${value}`);
                 }
+            } else if (key === 'roles') {
+                console.log(`⚠️ 暂时跳过roles字段: ${JSON.stringify(value)} (数据库字段不存在)`);
             } else {
                 console.log(`❌ 跳过字段: ${key} (不在允许列表中或值为undefined)`);
             }
@@ -150,7 +146,7 @@ export const updateUserProfile = async (req, res) => {
         // 获取更新后的用户信息（只查询确实存在的字段）
         const updatedUser = await new Promise((resolve, reject) => {
             getDb().query(
-                'SELECT id, username, email, points, avatar, has_uploaded_avatar, roles, created_at FROM users WHERE id = ?',
+                'SELECT id, username, email, points, avatar, has_uploaded_avatar, created_at FROM users WHERE id = ?',
                 [userId],
                 (err, results) => {
                     if (err) reject(err);
@@ -158,15 +154,6 @@ export const updateUserProfile = async (req, res) => {
                 }
             );
         });
-        
-        // 解析roles字段
-        let parsedRoles = [];
-        try {
-            parsedRoles = updatedUser.roles ? JSON.parse(updatedUser.roles) : [];
-        } catch (error) {
-            console.warn('解析roles字段失败:', error);
-            parsedRoles = [];
-        }
         
         res.json({
             success: true,
@@ -178,7 +165,6 @@ export const updateUserProfile = async (req, res) => {
                 points: updatedUser.points,
                 avatar: updatedUser.avatar,
                 hasUploadedAvatar: updatedUser.has_uploaded_avatar,
-                roles: parsedRoles,
                 joinDate: updatedUser.created_at
             }
         });
