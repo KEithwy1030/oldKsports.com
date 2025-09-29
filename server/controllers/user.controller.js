@@ -76,13 +76,20 @@ export const updateUserProfile = async (req, res) => {
             headers: req.headers
         });
         
+        const userId = req.user.id;
+        const updateData = req.body;
+        
         console.log('🔧 用户资料更新详情:', {
             updateData,
             allowedFields: ['avatar', 'email', 'username', 'hasUploadedAvatar', 'roles']
         });
         
-        const userId = req.user.id;
-        const updateData = req.body;
+        // 测试数据库连接
+        console.log('🔍 测试数据库连接...');
+        const db = getDb();
+        if (!db) {
+            throw new Error('数据库连接池未初始化');
+        }
         
         // 构建动态更新SQL（只更新确实存在的字段）
         const allowedFields = ['avatar', 'email', 'username', 'hasUploadedAvatar', 'roles'];
@@ -138,23 +145,54 @@ export const updateUserProfile = async (req, res) => {
         await new Promise((resolve, reject) => {
             getDb().query(sql, values, (err, result) => {
                 if (err) {
-                    console.error('SQL更新失败:', err);
+                    console.error('❌ SQL更新失败:', {
+                        error: err.message,
+                        code: err.code,
+                        errno: err.errno,
+                        sqlState: err.sqlState,
+                        sql: sql,
+                        values: values
+                    });
                     reject(err);
                 } else {
-                    console.log('SQL更新成功:', result);
+                    console.log('✅ SQL更新成功:', {
+                        affectedRows: result.affectedRows,
+                        changedRows: result.changedRows,
+                        insertId: result.insertId
+                    });
                     resolve(result);
                 }
             });
         });
         
         // 获取更新后的用户信息（只查询确实存在的字段）
+        console.log('🔍 查询更新后的用户信息...');
         const updatedUser = await new Promise((resolve, reject) => {
             getDb().query(
                 'SELECT id, username, email, points, avatar, has_uploaded_avatar, roles, created_at FROM users WHERE id = ?',
                 [userId],
                 (err, results) => {
-                    if (err) reject(err);
-                    else resolve(results[0]);
+                    if (err) {
+                        console.error('❌ 查询用户信息失败:', {
+                            error: err.message,
+                            code: err.code,
+                            errno: err.errno,
+                            sqlState: err.sqlState,
+                            userId: userId
+                        });
+                        reject(err);
+                    } else {
+                        console.log('✅ 查询用户信息成功:', {
+                            userId: userId,
+                            foundUser: !!results[0],
+                            userData: results[0] ? {
+                                id: results[0].id,
+                                username: results[0].username,
+                                roles: results[0].roles
+                            } : null
+                        });
+                        resolve(results[0]);
+                    }
                 }
             );
         });
