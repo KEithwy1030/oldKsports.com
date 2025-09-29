@@ -123,7 +123,7 @@ const ChatWidget: React.FC = () => {
   }, [messages]);
 
   // 获取聊天用户列表
-  const fetchChatUsers = async () => {
+  const fetchChatUsers = useCallback(async () => {
     if (!user) {
       console.warn('🔥 ChatWidget: 用户未登录，跳过获取聊天用户');
       return;
@@ -179,7 +179,7 @@ const ChatWidget: React.FC = () => {
     } catch (error) {
       console.error('获取聊天用户失败:', error);
     }
-  };
+  }, [user, localSelectedUserId, selectedUserId]); // 添加依赖
 
   // 获取与特定用户的消息
   const fetchMessagesWithUser = useCallback(async (userId: number) => {
@@ -290,7 +290,7 @@ const ChatWidget: React.FC = () => {
       return () => clearInterval(interval);
     }
     return undefined; // 确保所有代码路径都有返回值
-  }, [user]);
+  }, [user, fetchChatUsers]); // 添加 fetchChatUsers 依赖
 
   // 当选中用户时，更频繁地检查该对话的新消息
   useEffect(() => {
