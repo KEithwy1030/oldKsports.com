@@ -33,6 +33,33 @@ import { initUserHoverAutobind } from './components/UserHoverCard';
 function App() {
   // 兜底自动绑定：让任意带 data-username/data-user 的元素都能触发用户卡片
   try { initUserHoverAutobind(); } catch {}
+  // 全局兜底：将任何指向旧域名(zeabur.app)且路径为 /uploads/images 的图片地址改写为当前域名
+  // 防止由于缓存或旧构建导致的图片 404
+  try {
+    // 仅在浏览器环境
+    if (typeof window !== 'undefined') {
+      const rewriteOnce = () => {
+        const imgs = Array.from(document.querySelectorAll('img')) as HTMLImageElement[];
+        imgs.forEach(img => {
+          const raw = img.getAttribute('src') || '';
+          if (!raw) return;
+          try {
+            const u = new URL(raw, window.location.origin);
+            if (/zeabur\.app$/i.test(u.hostname) && u.pathname.startsWith('/uploads/images/')) {
+              img.src = `${window.location.origin}${u.pathname}`;
+            }
+          } catch {}
+        });
+      };
+      // 立即执行一次，并在前几秒内重复数次以覆盖懒加载
+      rewriteOnce();
+      let count = 0;
+      const timer = window.setInterval(() => {
+        rewriteOnce();
+        if (++count > 5) window.clearInterval(timer);
+      }, 1500);
+    }
+  } catch {}
   return (
     <ErrorBoundary>
       <AuthProvider>
