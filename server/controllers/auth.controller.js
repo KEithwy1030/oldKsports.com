@@ -73,9 +73,38 @@ export const register = async (req, res) => {
             }
         }
         
+        // 生成JWT token用于自动登录
+        const token = jwt.sign(
+            { 
+                id: newUsers[0].id, 
+                username: newUsers[0].username, 
+                email: newUsers[0].email,
+                isAdmin: newUsers[0].is_admin || false
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        
+        // 处理用户数据，确保所有字段正确
+        const userData = {
+            id: newUsers[0].id,
+            username: newUsers[0].username,
+            email: newUsers[0].email,
+            points: newUsers[0].points || 0,
+            avatar: newUsers[0].avatar,
+            hasUploadedAvatar: newUsers[0].has_uploaded_avatar || false,
+            isAdmin: newUsers[0].is_admin || false,
+            roles: roles || [],
+            joinDate: newUsers[0].created_at
+        };
+        
+        console.log('🔔 注册成功，返回用户数据:', userData);
+        
         return res.status(201).json({ 
             success: true, 
-            message: "用户注册成功" 
+            message: "用户注册成功",
+            token: token,
+            user: userData
         });
     } catch (err) {
         console.error('Registration error:', err);

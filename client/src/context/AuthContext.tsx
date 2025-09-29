@@ -222,12 +222,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await authAPI.register(username, email, password, roles);
       const userData = response.user || response;
       
-      // 处理字段映射，确保 isAdmin 字段正确
+      // 确保令牌同步到所有位置
+      if (response.token) {
+        localStorage.setItem('oldksports_auth_token', response.token);
+        localStorage.setItem('access_token', response.token); // 兼容性
+        console.log('注册成功 - 令牌已同步到所有位置');
+      }
+      
+      // 处理字段映射，确保所有字段正确
       const processedUserData = {
         ...userData,
         isAdmin: userData.isAdmin || false,
+        hasUploadedAvatar: userData.hasUploadedAvatar || false,
         joinDate: userData.joinDate ? new Date(userData.joinDate) : (userData.created_at ? new Date(userData.created_at) : new Date())
       };
+      
+      console.log('注册成功 - 原始用户数据:', userData);
+      console.log('注册成功 - 处理后的用户数据:', processedUserData);
+      
+      // 将处理后的数据保存到localStorage
+      localStorage.setItem('oldksports_user', JSON.stringify(processedUserData));
       
       setUser(processedUserData);
       setIsAuthenticated(true);
