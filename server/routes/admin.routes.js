@@ -5,7 +5,6 @@ import { authenticateToken } from '../middleware/auth.js';
 import { getDb } from '../db.js';
 import fs from 'fs';
 import path from 'path';
-import fetch from 'node-fetch';
 
 const router = express.Router();
 
