@@ -63,6 +63,7 @@ const AdminDashboard: React.FC = () => {
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [systemStatusError, setSystemStatusError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -112,15 +113,29 @@ const AdminDashboard: React.FC = () => {
       }
 
       // 获取系统状态
+      console.log('🔍 获取系统状态，API URL:', import.meta.env.VITE_API_URL || '/api');
       const systemResponse = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/system/status`, {
         credentials: 'include'
       });
       
+      console.log('🔍 系统状态响应:', {
+        ok: systemResponse.ok,
+        status: systemResponse.status,
+        statusText: systemResponse.statusText
+      });
+      
       if (systemResponse.ok) {
         const systemData = await systemResponse.json();
+        console.log('🔍 系统状态数据:', systemData);
         if (systemData.success) {
           setSystemStatus(systemData.data);
+          console.log('🔍 设置系统状态:', systemData.data);
+        } else {
+          console.error('❌ 系统状态API返回失败:', systemData);
         }
+      } else {
+        console.error('❌ 系统状态API请求失败:', systemResponse.status, systemResponse.statusText);
+        setSystemStatusError(`API请求失败: ${systemResponse.status} ${systemResponse.statusText}`);
       }
 
       setLoading(false);
@@ -304,35 +319,41 @@ const AdminDashboard: React.FC = () => {
               </div>
               <div className="p-6">
                 <div className="space-y-3">
+                  {systemStatusError && (
+                    <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3 mb-4">
+                      <p className="text-red-400 text-sm">系统状态获取失败: {systemStatusError}</p>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">服务器状态</span>
                     <span className={`flex items-center ${
-                      systemStatus?.server.status === 'normal' ? 'text-green-400' : 'text-red-400'
+                      systemStatus?.server?.status === 'normal' ? 'text-green-400' : 'text-red-400'
                     }`}>
                       <div className={`w-2 h-2 rounded-full mr-2 ${
-                        systemStatus?.server.status === 'normal' ? 'bg-green-400' : 'bg-red-400'
+                        systemStatus?.server?.status === 'normal' ? 'bg-green-400' : 'bg-red-400'
                       }`}></div>
-                      {systemStatus?.server.status === 'normal' ? '正常' : '异常'}
+                      {systemStatus?.server?.status === 'normal' ? '正常' : '异常'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">数据库连接</span>
                     <span className={`flex items-center ${
-                      systemStatus?.database.status === 'normal' ? 'text-green-400' : 'text-red-400'
+                      systemStatus?.database?.status === 'normal' ? 'text-green-400' : 'text-red-400'
                     }`}>
                       <div className={`w-2 h-2 rounded-full mr-2 ${
-                        systemStatus?.database.status === 'normal' ? 'bg-green-400' : 'bg-red-400'
+                        systemStatus?.database?.status === 'normal' ? 'bg-green-400' : 'bg-red-400'
                       }`}></div>
-                      {systemStatus?.database.status === 'normal' ? '正常' : '异常'}
+                      {systemStatus?.database?.status === 'normal' ? '正常' : '异常'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">存储空间</span>
                     <span className={`${
-                      (systemStatus?.storage.usage || 0) < 80 ? 'text-green-400' : 
-                      (systemStatus?.storage.usage || 0) < 90 ? 'text-yellow-400' : 'text-red-400'
+                      (systemStatus?.storage?.usage || 0) < 80 ? 'text-green-400' : 
+                      (systemStatus?.storage?.usage || 0) < 90 ? 'text-yellow-400' : 'text-red-400'
                     }`}>
-                      {systemStatus?.storage.usage || 0}% 使用
+                      {systemStatus?.storage?.usage || 0}% 使用
                     </span>
                   </div>
                 </div>
