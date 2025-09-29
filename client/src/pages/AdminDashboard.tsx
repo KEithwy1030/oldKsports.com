@@ -66,6 +66,16 @@ const AdminDashboard: React.FC = () => {
   const [systemStatusError, setSystemStatusError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 统一带上Authorization的fetch
+  const authFetch = async (input: RequestInfo, init: RequestInit = {}) => {
+    const token = localStorage.getItem('oldksports_auth_token') || localStorage.getItem('access_token');
+    const headers = new Headers(init.headers || {});
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return fetch(input, { ...init, headers, credentials: 'include' });
+  };
+
   useEffect(() => {
     if (user?.isAdmin) {
       fetchDashboardData();
@@ -75,9 +85,7 @@ const AdminDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       // 获取统计数据
-      const statsResponse = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/dashboard/stats`, {
-        credentials: 'include'
-      });
+      const statsResponse = await authFetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/dashboard/stats`);
       
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
@@ -95,17 +103,17 @@ const AdminDashboard: React.FC = () => {
               ((statsData.data.postGrowth[0]?.count || 0) / Math.max(1, statsData.data.totalPosts)) * 100 : 0
           });
         }
+      } else if (statsResponse.status === 401) {
+        setSystemStatusError('API请求失败: 401 未授权');
       }
 
       // 获取最近活动
-      const activityResponse = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/dashboard/activity`, {
-        credentials: 'include'
-      });
+      const activityResponse = await authFetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/dashboard/activity`);
       
       if (activityResponse.ok) {
         const activityData = await activityResponse.json();
         if (activityData.success) {
-          setRecentActivity(activityData.data.map(activity => ({
+          setRecentActivity(activityData.data.map((activity: any) => ({
             ...activity,
             timestamp: new Date(activity.timestamp).toLocaleString('zh-CN')
           })));
@@ -114,9 +122,7 @@ const AdminDashboard: React.FC = () => {
 
       // 获取系统状态
       console.log('🔍 获取系统状态，API URL:', import.meta.env.VITE_API_URL || '/api');
-      const systemResponse = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/system/status`, {
-        credentials: 'include'
-      });
+      const systemResponse = await authFetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/system/status`);
       
       console.log('🔍 系统状态响应:', {
         ok: systemResponse.ok,
@@ -141,7 +147,6 @@ const AdminDashboard: React.FC = () => {
       setLoading(false);
     } catch (error) {
       console.error('获取仪表板数据失败:', error);
-      // 不再使用模拟数据，直接提示加载失败，保持显示真实状态
       setLoading(false);
     }
   };
