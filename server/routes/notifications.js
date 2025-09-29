@@ -307,4 +307,82 @@ router.post('/send-test', authenticateToken, async (req, res) => {
   }
 });
 
+// 发送欢迎通知给所有用户（管理员功能）
+router.post('/send-welcome', authenticateToken, async (req, res) => {
+  try {
+    // 检查是否为管理员
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ 
+        success: false, 
+        error: '只有管理员可以发送欢迎通知' 
+      });
+    }
+    
+    console.log('🎉 管理员发送欢迎通知请求');
+    
+    // 获取所有用户
+    const users = await new Promise((resolve, reject) => {
+      getDb().query('SELECT id, username FROM users', (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
+      });
+    });
+    
+    console.log(`📊 找到 ${users.length} 个用户`);
+    
+    // 为每个用户创建欢迎通知
+    const results = [];
+    for (const user of users) {
+      try {
+        const query = `
+          INSERT INTO notifications (user_id, title, message, type, is_read)
+          VALUES (?, ?, ?, ?, ?)
+        `;
+        
+        await new Promise((resolve, reject) => {
+          getDb().query(query, [
+            user.id,
+            '🎉 欢迎加入OldKSports体育社区！',
+            `亲爱的 ${user.username}，\n\n欢迎您加入OldKSports体育社区！\n\n在这里您可以：\n• 发布体育相关的帖子和讨论\n• 与其他体育爱好者交流互动\n• 分享您的体育见解和经验\n• 参与社区活动和话题讨论\n\n我们致力于打造一个专业的体育自媒体社区，让每一位体育爱好者都能找到属于自己的位置。\n\n感谢您的加入，期待您的精彩内容！\n\n—— OldKSports团队`,
+            'system',
+            false
+          ], (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        });
+        
+        console.log(`✅ 用户 ${user.username} (ID: ${user.id}) 欢迎通知创建成功`);
+        results.push({ userId: user.id, username: user.username, success: true });
+      } catch (error) {
+        console.error(`❌ 用户 ${user.username} (ID: ${user.id}) 欢迎通知创建失败:`, error.message);
+        results.push({ userId: user.id, username: user.username, success: false, error: error.message });
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+    
+    console.log(`📋 欢迎通知发送完成: 成功 ${successCount}, 失败 ${failCount}`);
+    
+    res.json({
+      success: true,
+      message: '欢迎通知发送完成',
+      data: {
+        totalUsers: users.length,
+        successCount,
+        failCount,
+        results
+      }
+    });
+  } catch (error) {
+    console.error('❌ 发送欢迎通知失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '发送欢迎通知失败',
+      details: error.message 
+    });
+  }
+});
+
 export default router;
