@@ -9,18 +9,39 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    console.log('🔔 获取未读通知数量 - 用户ID:', userId);
+    const query = `
+      SELECT 
+        COUNT(*) as total_unread,
+        SUM(CASE WHEN type = 'reply' THEN 1 ELSE 0 END) as reply_count,
+        SUM(CASE WHEN type = 'mention' THEN 1 ELSE 0 END) as mention_count,
+        SUM(CASE WHEN type = 'message' THEN 1 ELSE 0 END) as message_count,
+        SUM(CASE WHEN type = 'system' THEN 1 ELSE 0 END) as system_count
+      FROM notifications 
+      WHERE user_id = ? AND is_read = FALSE
+    `;
     
-    // 临时返回空数据，避免数据库字段错误
-    res.json({
-      success: true,
-      data: {
-        total: 0,
-        reply: 0,
-        mention: 0,
-        message: 0,
-        system: 0
+    console.log('🔔 获取未读通知数量查询:', query);
+    console.log('🔔 用户ID:', userId);
+    
+    getDb().query(query, [userId], (err, results) => {
+      if (err) {
+        console.error('❌ 获取未读通知数量失败:', err);
+        return res.status(500).json({ success: false, error: '获取通知失败' });
       }
+      
+      const counts = results[0];
+      console.log('🔔 未读通知数量结果:', counts);
+      
+      res.json({
+        success: true,
+        data: {
+          total: parseInt(counts.total_unread) || 0,
+          reply: parseInt(counts.reply_count) || 0,
+          mention: parseInt(counts.mention_count) || 0,
+          message: parseInt(counts.message_count) || 0,
+          system: parseInt(counts.system_count) || 0
+        }
+      });
     });
   } catch (error) {
     console.error('获取未读通知数量错误:', error);
@@ -35,17 +56,51 @@ router.get('/list', authenticateToken, async (req, res) => {
     const { type, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
     
-    console.log('🔔 获取通知列表 - 用户ID:', userId, '类型:', type);
+    let whereClause = 'WHERE n.user_id = ?';
+    let queryParams = [userId];
     
-    // 临时返回空数据，避免数据库字段错误
-    res.json({
-      success: true,
-      data: [],
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: 0
+    if (type && ['reply', 'mention', 'message', 'system'].includes(type)) {
+      whereClause += ' AND n.type = ?';
+      queryParams.push(type);
+    }
+    
+    const query = `
+      SELECT 
+        n.id,
+        n.user_id,
+        n.title,
+        n.message as content,
+        n.type,
+        n.is_read,
+        n.created_at
+      FROM notifications n
+      ${whereClause}
+      ORDER BY n.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    
+    queryParams.push(parseInt(limit), parseInt(offset));
+    
+    console.log('🔔 获取通知列表查询:', query);
+    console.log('🔔 查询参数:', queryParams);
+    
+    getDb().query(query, queryParams, (err, results) => {
+      if (err) {
+        console.error('❌ 获取通知列表失败:', err);
+        return res.status(500).json({ success: false, error: '获取通知失败' });
       }
+      
+      console.log('🔔 通知查询结果:', results);
+      
+      res.json({
+        success: true,
+        data: results,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: results.length
+        }
+      });
     });
   } catch (error) {
     console.error('获取通知列表错误:', error);

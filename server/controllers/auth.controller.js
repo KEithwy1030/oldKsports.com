@@ -51,9 +51,34 @@ export const register = async (req, res) => {
         if (newUsers.length > 0) {
             const newUserId = newUsers[0].id;
             
-            // 临时禁用欢迎通知，避免数据库字段错误
-            console.log('🔔 跳过欢迎通知创建 (数据库字段问题):', { newUserId, username });
-            console.log('🔔 需要修复数据库: notifications表缺少user_id字段');
+            // 创建系统欢迎通知
+            try {
+                console.log('🔔 开始为新用户创建欢迎通知:', { newUserId, username });
+                console.log('🔔 通知服务状态检查:', typeof NotificationService);
+                console.log('🔔 通知服务方法检查:', typeof NotificationService.createSystemNotification);
+                
+                const notificationResult = await NotificationService.createSystemNotification(
+                    newUserId,
+                    '欢迎加入OldkSports体育社区！',
+                    `🎉 欢迎 ${username} 加入我们的体育社区！\n\n在这里您可以：\n• 📝 发布体育相关的帖子和讨论\n• 💬 与其他体育爱好者交流互动\n• 🏆 参与论坛活动，积累积分等级\n• 🔍 浏览优质商家和服务信息\n• 💌 通过私信功能与其他用户深入交流\n\n点击右上角用户名可以查看通知，点击其他用户头像可以发起私聊。祝您在社区中玩得愉快！`
+                );
+                console.log('🔔 新用户欢迎通知创建成功:', notificationResult);
+                console.log('🔔 通知创建结果详情:', {
+                    success: notificationResult.success,
+                    notificationId: notificationResult.notificationId,
+                    message: notificationResult.message
+                });
+            } catch (notifyError) {
+                console.error('❌ 创建欢迎通知失败:', notifyError);
+                console.error('❌ 通知错误详情:', {
+                    message: notifyError.message,
+                    stack: notifyError.stack,
+                    code: notifyError.code,
+                    errno: notifyError.errno,
+                    sqlState: notifyError.sqlState
+                });
+                // 不影响注册流程
+            }
         }
         
         // 生成JWT token用于自动登录
