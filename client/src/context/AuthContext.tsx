@@ -168,6 +168,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('oldksports_auth_token', response.token);
         localStorage.setItem('access_token', response.token); // 兼容性
         console.log('登录成功 - 令牌已同步到所有位置');
+        console.log('🔑 Token存储验证:', {
+          oldksports_auth_token: localStorage.getItem('oldksports_auth_token') ? '已存储' : '未存储',
+          access_token: localStorage.getItem('access_token') ? '已存储' : '未存储',
+          tokenLength: response.token.length
+        });
+      } else {
+        console.error('❌ 登录响应中没有token:', response);
       }
       
       // 处理字段映射，确保所有字段正确
@@ -227,6 +234,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('oldksports_auth_token', response.token);
         localStorage.setItem('access_token', response.token); // 兼容性
         console.log('注册成功 - 令牌已同步到所有位置');
+        console.log('🔑 注册Token存储验证:', {
+          oldksports_auth_token: localStorage.getItem('oldksports_auth_token') ? '已存储' : '未存储',
+          access_token: localStorage.getItem('access_token') ? '已存储' : '未存储',
+          tokenLength: response.token.length
+        });
+      } else {
+        console.error('❌ 注册响应中没有token:', response);
       }
       
       // 处理字段映射，确保所有字段正确
