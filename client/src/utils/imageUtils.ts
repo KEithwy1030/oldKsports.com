@@ -10,6 +10,12 @@ export const buildImageUrl = (imagePath: string): string => {
   if (!imagePath) return '';
   
   console.log('🖼️ buildImageUrl 输入:', imagePath);
+  console.log('🖼️ 当前环境:', {
+    PROD: import.meta.env.PROD,
+    DEV: import.meta.env.DEV,
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
+  });
   
   // 放行 data:/blob: 这类内联或临时URL（用于刚发表的回复）
   if (imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
@@ -47,7 +53,9 @@ export const buildImageUrl = (imagePath: string): string => {
   
   // 生产环境：API URL是完整URL，替换 /api 为根路径
   if (apiUrl.startsWith('http')) {
-    const result = apiUrl.replace('/api', '') + normalizedPath;
+    // 处理新的域名配置：oldksports.com/api -> oldksports.com
+    const baseUrl = apiUrl.replace('/api', '');
+    const result = baseUrl + normalizedPath;
     console.log('🖼️ 生产环境URL:', result);
     return result;
   }
@@ -93,7 +101,7 @@ export const fixImageUrlsInContent = (content: string): string => {
   if (!content) return content;
   
   // 先处理历史数据中的绝对URL，将3001端口统一替换为当前后端地址
-  const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '' : 'http://localhost:3000');
+  const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://oldksports.com' : 'http://localhost:3000');
   let fixedContent = content.replace(
     /http:\/\/localhost:3001(\/uploads\/images\/[^"]*)/g,
     `${backendUrl}$1`

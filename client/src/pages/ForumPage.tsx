@@ -368,11 +368,14 @@ const ForumPage: React.FC = () => {
       let contentWithImages = newPost.content;
       if (newPostImages.length > 0) {
         // 使用网格布局优化图片显示
+        console.log('🖼️ 论坛发帖图片路径:', newPostImages);
         const imageHtml = `
           <div class="post-images-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 16px 0;">
-            ${newPostImages.map((imagePath, index) => 
-              `<img src="${buildImageUrl(imagePath)}" alt="帖子图片 ${index + 1}" style="width: 100%; height: auto; border-radius: 8px; object-fit: contain;" class="post-image" />`
-            ).join('')}
+            ${newPostImages.map((imagePath, index) => {
+              const imageUrl = buildImageUrl(imagePath);
+              console.log(`🖼️ 图片 ${index + 1} URL:`, imageUrl);
+              return `<img src="${imageUrl}" alt="帖子图片 ${index + 1}" style="width: 100%; height: auto; border-radius: 8px; object-fit: contain;" class="post-image" />`;
+            }).join('')}
           </div>
         `;
         contentWithImages = contentWithImages + '\n\n' + imageHtml;
