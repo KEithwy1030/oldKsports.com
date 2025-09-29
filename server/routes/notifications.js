@@ -69,7 +69,7 @@ router.get('/list', authenticateToken, async (req, res) => {
         n.id,
         n.user_id,
         n.title,
-        n.title as content,
+        n.message as content,
         n.type,
         n.is_read,
         n.created_at
