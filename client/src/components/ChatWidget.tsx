@@ -159,14 +159,17 @@ const ChatWidget: React.FC = () => {
           console.log('🔥 重新计算总未读数:', total);
           setTotalUnreadCount(total);
           
-          // 如果没有选中用户且有聊天记录，选择第一个有效用户
+          // 如果没有选中用户且有聊天记录，选择第一个有效用户（避免无限循环）
           if (!localSelectedUserId && !selectedUserId && validUsers.length > 0) {
             // 选择第一个有效用户
             const validUser = validUsers[0];
             
             if (validUser) {
               console.log('🔥 自动选择第一个有效用户:', validUser);
-              setLocalSelectedUserId(validUser.user_id || validUser.id);
+              // 使用 setTimeout 避免同步状态更新导致的无限循环
+              setTimeout(() => {
+                setLocalSelectedUserId(validUser.user_id || validUser.id);
+              }, 0);
             } else {
               console.warn('🔥 没有找到有效的聊天用户');
             }
