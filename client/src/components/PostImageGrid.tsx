@@ -188,7 +188,28 @@ const PostImageGrid: React.FC<Props> = ({ images, onImageClick, className }) => 
             role="listitem"
             onClick={(e) => { e.stopPropagation(); openModal(src, idx); }}
           >
-              <img src={buildImageUrl(src)} alt={`img-${idx + 1}`} loading="lazy" decoding="async" />
+              <img
+                src={buildImageUrl(src)}
+                alt={`img-${idx + 1}`}
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  // 兜底：若仍加载失败，尝试将任何旧域名替换为当前域名并重试一次
+                  const img = e.currentTarget as HTMLImageElement & { __retry?: boolean };
+                  if (img.__retry) return;
+                  img.__retry = true;
+                  try {
+                    const url = new URL(img.src);
+                    const path = url.pathname.startsWith('/uploads/') ? url.pathname : `/uploads${url.pathname}`.replace('//', '/');
+                    img.src = `${window.location.origin}${path}`;
+                  } catch {
+                    // 若不是绝对URL，则直接统一走当前域名
+                    const original = (src || '').replace(/^https?:\/\/[^/]+/, '');
+                    const normalized = original.startsWith('/') ? original : `/${original}`;
+                    img.src = `${window.location.origin}${normalized}`;
+                  }
+                }}
+              />
             </div>
           );
         })}

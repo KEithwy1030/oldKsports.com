@@ -26,6 +26,34 @@ const NewPostPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
 
+  // 将 dataURL 转为 File
+  const dataUrlToFile = async (dataUrl: string, index: number): Promise<File> => {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const ext = (blob.type.split('/')[1] || 'png').split(';')[0];
+    return new File([blob], `post_image_${Date.now()}_${index}.${ext}`, { type: blob.type });
+  };
+
+  const uploadImagesIfNeeded = async (imgs: string[]): Promise<string[]> => {
+    const dataUrls = imgs.filter(src => src.startsWith('data:'));
+    if (dataUrls.length === 0) return imgs;
+    const form = new FormData();
+    const files = await Promise.all(dataUrls.map((d, i) => dataUrlToFile(d, i)));
+    files.forEach(f => form.append('images', f));
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/upload/images`, { method: 'POST', body: form });
+      const result = await resp.json();
+      if (result?.success && Array.isArray(result.files)) {
+        const serverPaths: string[] = result.files.map((f: any) => f.path);
+        let idx = 0;
+        return imgs.map(src => src.startsWith('data:') ? (serverPaths[idx++] || src) : src);
+      }
+    } catch (e) {
+      console.warn('图片批量上传失败，降级为内联dataURL保存：', e);
+    }
+    return imgs;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // 规则：标题必须<=15字
@@ -51,10 +79,11 @@ const NewPostPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // 将图片数据嵌入到内容中
+      // 若为 dataURL，先上传换成 /uploads/images/...，防止后续构建变更导致失效
+      const normalizedImages = await uploadImagesIfNeeded(images);
       let contentWithImages = formData.content;
-      if (images.length > 0) {
-        const imageHtml = images.map((image, index) => 
+      if (normalizedImages.length > 0) {
+        const imageHtml = normalizedImages.map((image, index) => 
           `<img src="${image}" alt="帖子图片 ${index + 1}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; display: block;" class="post-image" />`
         ).join('');
         contentWithImages = contentWithImages + '\n\n' + imageHtml;

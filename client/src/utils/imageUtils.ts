@@ -115,8 +115,8 @@ export const isValidImagePath = (imagePath: string): boolean => {
 export const fixImageUrlsInContent = (content: string): string => {
   if (!content) return content;
   
-  // 先处理历史数据中的绝对URL，将3001端口统一替换为当前后端地址
-  const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://oldksports.com' : 'http://localhost:3000');
+  // 先处理历史数据中的绝对URL，将旧域名与3001端口统一替换为当前后端地址
+  const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:3000');
   let fixedContent = content.replace(
     /http:\/\/localhost:3001(\/uploads\/images\/[^"']*)/g,
     `${backendUrl}$1`
