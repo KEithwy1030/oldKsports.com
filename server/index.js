@@ -176,7 +176,7 @@ app.post("/api/upload/images", upload.array('images', 9), (req, res) => {
 
     const uploadedFiles = req.files.map(file => {
       // 复制文件到public目录，供前端访问
-      const publicPath = path.join(publicUploadsDir, file.filename);
+      const publicPath = nodePath.join(publicUploadsDir, file.filename);
       fs.copyFileSync(file.path, publicPath);
       
       return {
