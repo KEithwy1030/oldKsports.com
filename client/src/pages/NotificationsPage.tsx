@@ -42,24 +42,36 @@ const NotificationsPage: React.FC = () => {
     if (!user) return;
     
     try {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
       const url = type && type !== 'all' 
-        ? `/api/notifications/list?type=${type}` 
-        : '/api/notifications/list';
+        ? `${apiUrl}/notifications/list?type=${type}` 
+        : `${apiUrl}/notifications/list`;
         
+      console.log('🔔 前端获取通知列表:', url);
+      console.log('🔔 当前用户:', user);
+      
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('oldksports_auth_token')}`
         }
       });
       
+      console.log('🔔 通知API响应状态:', response.status, response.statusText);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('🔔 通知API响应数据:', data);
         if (data.success) {
           setNotifications(data.data);
+          console.log('🔔 设置通知数据:', data.data);
+        } else {
+          console.error('❌ 通知API返回失败:', data);
         }
+      } else {
+        console.error('❌ 通知API请求失败:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('获取通知列表失败:', error);
+      console.error('❌ 获取通知列表失败:', error);
     } finally {
       setLoading(false);
     }

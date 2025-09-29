@@ -20,13 +20,18 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
       WHERE user_id = ? AND is_read = FALSE
     `;
     
+    console.log('🔔 获取未读通知数量查询:', query);
+    console.log('🔔 用户ID:', userId);
+    
     getDb().query(query, [userId], (err, results) => {
       if (err) {
-        console.error('获取未读通知数量失败:', err);
+        console.error('❌ 获取未读通知数量失败:', err);
         return res.status(500).json({ success: false, error: '获取通知失败' });
       }
       
       const counts = results[0];
+      console.log('🔔 未读通知数量结果:', counts);
+      
       res.json({
         success: true,
         data: {
@@ -61,13 +66,14 @@ router.get('/list', authenticateToken, async (req, res) => {
     
     const query = `
       SELECT 
-        n.*,
-        sender.username as sender_username,
-        sender.avatar as sender_avatar,
-        fp.title as post_title
+        n.id,
+        n.user_id,
+        n.title,
+        n.message as content,
+        n.type,
+        n.is_read,
+        n.created_at
       FROM notifications n
-      LEFT JOIN users sender ON n.sender_id = sender.id
-      LEFT JOIN forum_posts fp ON n.related_post_id = fp.id
       ${whereClause}
       ORDER BY n.created_at DESC
       LIMIT ? OFFSET ?
@@ -75,11 +81,16 @@ router.get('/list', authenticateToken, async (req, res) => {
     
     queryParams.push(parseInt(limit), parseInt(offset));
     
+    console.log('🔔 获取通知列表查询:', query);
+    console.log('🔔 查询参数:', queryParams);
+    
     getDb().query(query, queryParams, (err, results) => {
       if (err) {
-        console.error('获取通知列表失败:', err);
+        console.error('❌ 获取通知列表失败:', err);
         return res.status(500).json({ success: false, error: '获取通知失败' });
       }
+      
+      console.log('🔔 通知查询结果:', results);
       
       res.json({
         success: true,
