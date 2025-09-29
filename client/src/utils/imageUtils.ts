@@ -29,12 +29,25 @@ export const buildImageUrl = (imagePath: string): string => {
     return imagePath;
   }
 
-  // 如果已经是完整URL，做兼容性规范化（把 localhost:3001 统一到 8080）
+  const apiUrl = import.meta.env.VITE_API_URL || '/api';
+  const baseUrl = apiUrl.startsWith('http') ? apiUrl.replace('/api', '') : (import.meta.env.VITE_API_BASE_URL || window.location.origin);
+
+  // 如果已经是完整URL，做兼容性规范化
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     try {
       const url = new URL(imagePath);
+      // 统一 localhost:3001 → 8080（历史本地）
       if (url.hostname === 'localhost' && url.port === '3001') {
-        url.port = '8080';
+        url.port = '';
+        url.host = new URL(baseUrl).host; // 用当前后端域
+        url.protocol = new URL(baseUrl).protocol;
+        return url.toString();
+      }
+      // 统一旧的zeabur域名到自定义域名
+      if (url.hostname === 'oldksports-app.zeabur.app' || url.hostname === 'oldksports-server.zeabur.app') {
+        const target = new URL(baseUrl);
+        url.protocol = target.protocol;
+        url.host = target.host;
         return url.toString();
       }
     } catch {}
@@ -44,8 +57,6 @@ export const buildImageUrl = (imagePath: string): string => {
   // 确保路径以 / 开头
   const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
   
-  // 获取API基础URL
-  const apiUrl = import.meta.env.VITE_API_URL || '/api';
   console.log('🖼️ API URL:', apiUrl);
   
   // 本地开发环境：API URL是 /api，需要替换为后端地址
@@ -59,8 +70,6 @@ export const buildImageUrl = (imagePath: string): string => {
   
   // 生产环境：API URL是完整URL，替换 /api 为根路径
   if (apiUrl.startsWith('http')) {
-    // 处理新的域名配置：oldksports.com/api -> oldksports.com
-    const baseUrl = apiUrl.replace('/api', '');
     const result = baseUrl + normalizedPath;
     console.log('🖼️ 生产环境URL:', result);
     return result;
