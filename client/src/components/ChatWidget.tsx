@@ -166,10 +166,8 @@ const ChatWidget: React.FC = () => {
             
             if (validUser) {
               console.log('🔥 自动选择第一个有效用户:', validUser);
-              // 使用 setTimeout 避免同步状态更新导致的无限循环
-              setTimeout(() => {
-                setLocalSelectedUserId(validUser.user_id || validUser.id);
-              }, 0);
+              // 直接设置，避免循环
+              setLocalSelectedUserId(validUser.user_id || validUser.id);
             } else {
               console.warn('🔥 没有找到有效的聊天用户');
             }
