@@ -193,6 +193,7 @@ const PostImageGrid: React.FC<Props> = ({ images, onImageClick, className }) => 
                 alt={`img-${idx + 1}`}
                 loading="lazy"
                 decoding="async"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 1 }}
                 onError={(e) => {
                   // 兜底：若仍加载失败，尝试将任何旧域名替换为当前域名并重试一次
                   const img = e.currentTarget as HTMLImageElement & { __retry?: boolean };
