@@ -57,9 +57,17 @@ const PostDetailPage: React.FC = () => {
         // 再请求后端API获取单个帖子，成功则以服务端数据为准
         if (postId) {
           const response = await forumAPI.getPostById(postId);
-        console.log('PostDetailPage: API响应:', response);
-        if (response.post) {
-          try { await incrementPostViews(response.post.id); } catch {}
+          console.log('PostDetailPage: API响应:', response);
+          console.log('PostDetailPage: 帖子数据:', {
+            id: response.post?.id,
+            title: response.post?.title,
+            author: response.post?.author,
+            author_id: response.post?.author_id,
+            timestamp: response.post?.timestamp,
+            created_at: response.post?.created_at
+          });
+          if (response.post) {
+            try { await incrementPostViews(response.post.id); } catch {}
           // 若本地有更多回复，进行轻量合并以保证已发本地回复可见
           try {
             const raw = localStorage.getItem('oldksports_forum_posts');

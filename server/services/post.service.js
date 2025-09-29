@@ -30,22 +30,22 @@ export const findPosts = (category) => {
 
         // 修改查询以包含最新回复时间和回复数量，并按最新活动时间排序
         const q = normalized ? 
-            `SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar,
+            `SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.id as author_id, u.username, u.avatar,
              COALESCE(MAX(r.created_at), p.created_at) as latest_activity,
              COUNT(r.id) as reply_count
              FROM users u 
              JOIN forum_posts p ON u.id = p.author_id 
              LEFT JOIN forum_replies r ON p.id = r.post_id 
              WHERE p.category=?
-             GROUP BY p.id, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar
+             GROUP BY p.id, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.id, u.username, u.avatar
              ORDER BY latest_activity DESC` :
-            `SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar,
+            `SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.id as author_id, u.username, u.avatar,
              COALESCE(MAX(r.created_at), p.created_at) as latest_activity,
              COUNT(r.id) as reply_count
              FROM users u 
              JOIN forum_posts p ON u.id = p.author_id 
              LEFT JOIN forum_replies r ON p.id = r.post_id 
-             GROUP BY p.id, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar
+             GROUP BY p.id, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.id, u.username, u.avatar
              ORDER BY latest_activity DESC`;
         const params = normalized ? [normalized] : [];
         
@@ -58,20 +58,41 @@ export const findPosts = (category) => {
                 return resolve([]); // 返回空数组而不是拒绝
             }
             console.log('查询帖子成功，返回数据:', data.length, '条记录');
-            resolve(data);
+            
+            // 标准化数据格式，确保前端能正确获取
+            const normalizedData = data.map(post => ({
+                ...post,
+                author: post.username,
+                author_id: post.author_id,
+                timestamp: post.created_at
+            }));
+            
+            resolve(normalizedData);
         });
     });
 };
 
 export const findPostById = (postId) => {
     return new Promise((resolve, reject) => {
-        // 首先获取帖子信息
-        const postQuery = "SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.username, u.avatar, u.avatar AS userImg FROM users u JOIN forum_posts p ON u.id = p.author_id WHERE p.id = ?";
+        // 首先获取帖子信息 - 添加author_id字段
+        const postQuery = "SELECT p.id, p.title, p.content, p.category, p.created_at, p.updated_at, p.views, p.likes, u.id as author_id, u.username, u.avatar, u.avatar AS userImg FROM users u JOIN forum_posts p ON u.id = p.author_id WHERE p.id = ?";
         getDb().query(postQuery, [postId], (err, postData) => {
             if (err) return reject(err);
             if (!postData || postData.length === 0) return resolve(null);
             
             const post = postData[0];
+            
+            // 添加时间字段别名，确保前端能正确获取
+            post.timestamp = post.created_at;
+            post.author = post.username;
+            
+            console.log('🔍 帖子详情查询结果:', {
+                id: post.id,
+                title: post.title,
+                author: post.author,
+                author_id: post.author_id,
+                timestamp: post.timestamp
+            });
             
             // 然后获取该帖子的回复
             // 使用 COALESCE 在用户缺失时提供兜底昵称，并统一时间别名为 createdAt
