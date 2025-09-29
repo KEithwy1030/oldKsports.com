@@ -179,7 +179,7 @@ const ChatWidget: React.FC = () => {
     } catch (error) {
       console.error('获取聊天用户失败:', error);
     }
-  }, [user, localSelectedUserId, selectedUserId]); // 添加依赖
+  }, [user]); // 只依赖 user，避免循环
 
   // 获取与特定用户的消息
   const fetchMessagesWithUser = useCallback(async (userId: number) => {
@@ -290,7 +290,7 @@ const ChatWidget: React.FC = () => {
       return () => clearInterval(interval);
     }
     return undefined; // 确保所有代码路径都有返回值
-  }, [user, fetchChatUsers]); // 添加 fetchChatUsers 依赖
+  }, [user]); // 移除 fetchChatUsers 依赖，避免循环
 
   // 当选中用户时，更频繁地检查该对话的新消息
   useEffect(() => {
