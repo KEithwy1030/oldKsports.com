@@ -109,13 +109,25 @@ export const fixImageUrlsInContent = (content: string): string => {
   // 先处理历史数据中的绝对URL，将3001端口统一替换为当前后端地址
   const backendUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://oldksports.com' : 'http://localhost:3000');
   let fixedContent = content.replace(
-    /http:\/\/localhost:3001(\/uploads\/images\/[^"]*)/g,
+    /http:\/\/localhost:3001(\/uploads\/images\/[^"']*)/g,
     `${backendUrl}$1`
   );
-  
+
+  // 统一将 /public/uploads/images 前缀改为 /uploads/images
+  fixedContent = fixedContent.replace(
+    /(["'])(?:\/public)?\/uploads\/images\/([^"']+)(["'])/g,
+    (_m, p1, p2, p3) => `${p1}/uploads/images/${p2}${p3}`
+  );
+
+  // 处理没有前导斜杠的相对路径：uploads/images/xxx → /uploads/images/xxx
+  fixedContent = fixedContent.replace(
+    /(["'])uploads\/images\/([^"']+)(["'])/g,
+    (_m, p1, p2, p3) => `${p1}/uploads/images/${p2}${p3}`
+  );
+
   // 然后匹配所有img标签的src属性，使用buildImageUrl统一处理
   return fixedContent.replace(
-    /<img([^>]+)src="([^"]+)"([^>]*)>/g,
+    /<img([^>]+)src=["']([^"']+)["']([^>]*)>/g,
     (match, before, src, after) => {
       if (src.startsWith('data:') || src.startsWith('blob:')) {
         return `<img${before}src="${src}"${after}>`;
