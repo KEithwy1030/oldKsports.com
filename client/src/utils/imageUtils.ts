@@ -113,6 +113,11 @@ export const fixImageUrlsInContent = (content: string): string => {
     `${backendUrl}$1`
   );
 
+  // 将旧的Zeabur域名统一替换为自定义域名
+  fixedContent = fixedContent
+    .replace(/https?:\/\/oldksports-app\.zeabur\.app(\/uploads\/images\/[^"']*)/g, `${backendUrl}$1`)
+    .replace(/https?:\/\/oldksports-server\.zeabur\.app(\/uploads\/images\/[^"']*)/g, `${backendUrl}$1`);
+
   // 统一将 /public/uploads/images 前缀改为 /uploads/images
   fixedContent = fixedContent.replace(
     /(["'])(?:\/public)?\/uploads\/images\/([^"']+)(["'])/g,
