@@ -52,6 +52,16 @@ const AdminPage: React.FC = () => {
   });
   
   
+  // 统一带上Authorization的fetch（与AdminDashboard一致）
+  const authFetch = async (input: RequestInfo, init: RequestInit = {}) => {
+    const token = localStorage.getItem('oldksports_auth_token') || localStorage.getItem('access_token');
+    const headers = new Headers(init.headers || {});
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return fetch(input, { ...init, headers, credentials: 'include' });
+  };
+
   // 加载所有用户数据和网站统计
   useEffect(() => {
     loadAllUsers();
@@ -62,11 +72,47 @@ const AdminPage: React.FC = () => {
   }, [getBotAccounts]);
 
   // 加载所有用户数据
-  const loadAllUsers = () => {
+  const loadAllUsers = async () => {
+    try {
+      // 优先从后端获取真实数据
+      const res = await authFetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/users`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          const usersFromApi: User[] = data.data.map((u: any) => {
+            const points = u.points || 0;
+            const level = getUserLevel(points);
+            const lastLogin = u.last_login ? new Date(u.last_login) : null;
+            const isOnline = lastLogin ? (Date.now() - lastLogin.getTime()) <= 10 * 60 * 1000 : false;
+            return {
+              id: u.id,
+              username: u.username,
+              email: u.email,
+              points,
+              level,
+              joinDate: u.created_at ? new Date(u.created_at) : new Date(),
+              hasUploadedAvatar: !!u.avatar,
+              avatar: u.avatar || null,
+              isAdmin: !!u.is_admin,
+              // 兼容现有表格字段
+              lastLogin: lastLogin || undefined,
+              isOnline: isOnline as any
+            } as unknown as User;
+          });
+          setAllUsers(usersFromApi);
+          setFilteredUsers(usersFromApi);
+          return;
+        }
+      }
+      console.warn('获取后端用户失败，使用本地回退数据');
+    } catch (e) {
+      console.warn('获取后端用户异常，使用本地回退数据:', e);
+    }
+
+    // 回退：旧的本地组合数据
     const botAccounts = getBotAccounts();
     const mockUsersData = mockUsers.filter(u => u.username !== 'oldk'); // 排除当前管理员
     const registeredUsers = getRegisteredUsers(); // 获取注册用户
-    
     const combinedUsers = [...mockUsersData, ...botAccounts, ...registeredUsers];
     setAllUsers(combinedUsers);
     setFilteredUsers(combinedUsers);
@@ -483,7 +529,9 @@ const AdminPage: React.FC = () => {
                                 普通用户
                               </span>
                             )}
-                            <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                            <div className={`w-2 h-2 rounded-full ${
+                              (user as any).isOnline ? 'bg-emerald-400' : 'bg-gray-500'
+                            }`}></div>
                           </div>
                         </td>
                       </tr>
