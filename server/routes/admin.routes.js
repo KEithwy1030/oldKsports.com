@@ -72,21 +72,42 @@ router.get('/dashboard/stats', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
-// 管理员活动日志
+// 管理员活动日志（仅返回结构化的注册/发帖事件，避免返回HTML内容）
 router.get('/dashboard/activity', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const recentPosts = await dbQuery(`
-      SELECT p.*, u.username 
-      FROM forum_posts p 
-      JOIN users u ON p.author_id = u.id 
-      ORDER BY p.created_at DESC 
+    // 最近注册用户
+    const recentRegistrations = await dbQuery(`
+      SELECT 
+        'register' AS type,
+        u.username AS username,
+        NULL AS title,
+        NULL AS category,
+        u.created_at AS timestamp
+      FROM users u
+      ORDER BY u.created_at DESC
       LIMIT 10
     `);
-    
-    res.json({
-      success: true,
-      data: recentPosts
-    });
+
+    // 最近发帖（仅返回标题与分类，不返回正文）
+    const recentPosts = await dbQuery(`
+      SELECT 
+        'post' AS type,
+        u.username AS username,
+        p.title AS title,
+        p.category AS category,
+        p.created_at AS timestamp
+      FROM forum_posts p
+      JOIN users u ON p.author_id = u.id
+      ORDER BY p.created_at DESC
+      LIMIT 10
+    `);
+
+    // 合并并按时间倒序
+    const merged = [...recentRegistrations, ...recentPosts]
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 20);
+
+    res.json({ success: true, data: merged });
   } catch (error) {
     console.error('获取活动日志失败:', error);
     res.status(500).json({ success: false, error: '获取活动日志失败' });

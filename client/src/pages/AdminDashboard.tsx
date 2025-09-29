@@ -113,9 +113,15 @@ const AdminDashboard: React.FC = () => {
       if (activityResponse.ok) {
         const activityData = await activityResponse.json();
         if (activityData.success) {
-          setRecentActivity(activityData.data.map((activity: any) => ({
-            ...activity,
-            timestamp: new Date(activity.timestamp).toLocaleString('zh-CN')
+          // 只展示结构化事件，不含图片/HTML
+          setRecentActivity(activityData.data.map((item: any, idx: number) => ({
+            id: idx,
+            type: item.type === 'register' ? 'user' : 'post',
+            content: item.type === 'register' 
+              ? `${item.username} 注册成为新用户`
+              : `${item.username} 在 ${item.category || '综合'} 发表新帖：《${item.title}》`,
+            user: item.username,
+            timestamp: new Date(item.timestamp).toLocaleString('zh-CN')
           })));
         }
       }
@@ -306,10 +312,10 @@ const AdminDashboard: React.FC = () => {
                     <FileText className="w-4 h-4 mr-2" />
                     帖子管理
                   </button>
-                  <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors flex items-center">
+                  <Link to="/admin/users" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors flex items-center">
                     <BarChart3 className="w-4 h-4 mr-2" />
-                    数据统计
-                  </button>
+                    用户管理
+                  </Link>
                 </div>
               </div>
             </div>

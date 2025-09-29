@@ -56,6 +56,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             <Route path="/admin-login" element={<AdminLoginPage />} />
             <Route path="/admin" element={<ProtectedRoute adminOnly={true}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute adminOnly={true}><AdminPage /></ProtectedRoute>} />
         <Route path="/admin/merchants" element={<ProtectedRoute adminOnly={true}><MerchantManagement /></ProtectedRoute>} />
         <Route path="/admin/blacklist" element={<ProtectedRoute adminOnly={true}><BlacklistManagement /></ProtectedRoute>} />
             <Route path="/merchants" element={<ProtectedRoute><MerchantsPage /></ProtectedRoute>} />
