@@ -462,6 +462,10 @@ const Navigation: React.FC = () => {
           </div>
         )}
       </div>
+      {/* 版本号显示 - 用于验证部署版本 */}
+      <div className="fixed bottom-0 right-0 bg-black/50 text-xs text-gray-500 px-2 py-1 z-50 pointer-events-none">
+        v2.0.0
+      </div>
     </nav>
     </>
   );
