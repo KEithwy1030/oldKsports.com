@@ -30,7 +30,7 @@
       },
       "deploy": {
         "type": "node",
-        "startCommand": "node start-production.js"
+        "startCommand": "npm start"
       },
       "env": {
         "NODE_ENV": "production",

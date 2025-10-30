@@ -341,7 +341,9 @@ app.get("/api/admin/check", authenticateToken, async (req, res) => {
   }
 });
 
-// 管理员清空所有帖子的API端点
+// ⚠️ 管理员清空所有帖子的API端点 - 已禁用以防止误操作
+// 如需使用，请手动在代码中取消注释，并确保在生产环境中谨慎使用
+/*
 app.delete("/api/admin/posts/clear", authenticateToken, async (req, res) => {
   try {
     if (!req.user.isAdmin) {
@@ -368,6 +370,7 @@ app.delete("/api/admin/posts/clear", authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, error: '清空失败' });
   }
 });
+*/
 
 
 // 启动服务器

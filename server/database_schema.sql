@@ -1,7 +1,9 @@
 -- Old K Sports 数据库表结构
 -- 用于在 Zeabur MySQL 数据库中创建必要的表
+-- ⚠️ 注意：生产环境实际使用的数据库是 'zeabur'，不是 'old_k_sports'
+-- 此文件仅作为参考，实际部署时数据库名称由环境变量 MYSQL_DATABASE 决定
 
-USE old_k_sports;
+-- USE old_k_sports; -- 已注释，实际使用环境变量中的数据库名
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS users (
@@ -21,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_checkin_date DATE DEFAULT NULL,
     reset_token VARCHAR(255) DEFAULT NULL,
     reset_token_expires DATETIME DEFAULT NULL,
+    last_login TIMESTAMP NULL DEFAULT NULL, -- 2.0版本新增：记录用户最后登录时间
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
