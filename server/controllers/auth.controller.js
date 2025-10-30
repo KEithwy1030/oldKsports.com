@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { NotificationService } from '../services/notification.service.js';
 import { addUserLevel } from '../utils/userLevel.js';
+import { getDb } from '../db.js';
 
 dotenv.config();
 
@@ -186,6 +187,30 @@ export const login = async (req, res) => {
             secretLength: jwtSecret.length,
             tokenLength: token.length 
         });
+        
+        // 2.0版本：更新last_login字段
+        try {
+            const db = getDb();
+            await new Promise((resolve, reject) => {
+                db.query(
+                    'UPDATE users SET last_login = NOW() WHERE id = ?',
+                    [user.id],
+                    (err, results) => {
+                        if (err) {
+                            console.error('更新last_login失败:', err);
+                            // 不阻止登录，只记录错误
+                            resolve();
+                        } else {
+                            console.log('✅ last_login已更新:', user.id);
+                            resolve();
+                        }
+                    }
+                );
+            });
+        } catch (updateError) {
+            console.error('更新last_login异常:', updateError);
+            // 不阻止登录流程
+        }
         
         // Remove sensitive data and add user level
         const { password: _, ...userData } = user;
