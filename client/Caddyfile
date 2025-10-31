@@ -1,8 +1,14 @@
 :8080 {
     root * /usr/share/caddy
+    
+    # API路由转发到后端，保留/api前缀
     handle /api/* {
-        reverse_proxy http://backend:8080
+        reverse_proxy http://backend:8080 {
+            header_up Host {host}
+        }
     }
+    
+    # SPA路由：所有其他请求返回index.html
     try_files {path} /index.html
     file_server
 }

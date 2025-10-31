@@ -11,12 +11,11 @@
         "commands": ["npm ci", "npm run build"]
       },
       "deploy": {
-        "type": "static",
-        "outputDir": "dist"
+        "type": "docker"
       },
       "env": {
         "NODE_ENV": "production",
-        "VITE_API_URL": "https://oldksports-app.zeabur.app"
+        "VITE_API_URL": "https://oldksports.com/api"
       }
     },
     {
