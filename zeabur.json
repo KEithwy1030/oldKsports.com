@@ -7,9 +7,12 @@
         "type": "git",
         "rootDir": "client"
       },
+      "build": {
+        "commands": ["npm install", "npm run build"]
+      },
       "deploy": {
-        "type": "docker",
-        "dockerfile": "Dockerfile"
+        "type": "static",
+        "output": "dist"
       },
       "env": {
         "NODE_ENV": "production",
