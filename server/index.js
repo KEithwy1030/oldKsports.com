@@ -15,7 +15,10 @@ import dotenv from "dotenv";
 import multer from "multer";
 import nodePath from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
 import { getDb } from "./db.js";
+
+const __dirname = nodePath.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 
@@ -372,6 +375,13 @@ app.delete("/api/admin/posts/clear", authenticateToken, async (req, res) => {
 });
 */
 
+// 提供前端静态文件（在所有API路由之后，SPA路由之前）
+app.use(express.static(nodePath.join(__dirname, 'public', 'dist')));
+
+// SPA 路由处理 - 所有未匹配的路由返回 index.html
+app.get('*', (req, res) => {
+    res.sendFile(nodePath.join(__dirname, 'public', 'dist', 'index.html'));
+});
 
 // 启动服务器
 const startServer = async () => {

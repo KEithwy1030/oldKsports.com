@@ -2,28 +2,14 @@
   "name": "oldksports-production",
   "services": [
     {
-      "name": "frontend",
-      "source": {
-        "type": "git",
-        "rootDir": "client"
-      },
-      "deploy": {
-        "type": "docker",
-        "dockerfile": "Dockerfile"
-      },
-      "env": {
-        "NODE_ENV": "production"
-      }
-    },
-    {
       "name": "backend",
       "source": {
         "type": "git",
-        "rootDir": "server"
+        "rootDir": "."
       },
       "deploy": {
         "type": "docker",
-        "dockerfile": "Dockerfile"
+        "dockerfile": "Dockerfile.server"
       },
       "env": {
         "NODE_ENV": "production",
