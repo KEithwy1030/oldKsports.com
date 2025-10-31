@@ -5,11 +5,7 @@
     @api {
         path /api/*
     }
-    reverse_proxy @api https://oldksports-app.zeabur.app {
-        transport http {
-            tls_insecure_skip_verify
-        }
-    }
+    reverse_proxy @api https://oldksports-app.zeabur.app
     
     # 阻止访问敏感目录
     @unsafePath {
