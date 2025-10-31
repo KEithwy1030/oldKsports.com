@@ -1,3 +1,22 @@
+FROM node:18-alpine
+LABEL "language"="nodejs"
+LABEL "framework"="express"
+
+WORKDIR /app
+
+# 仅安装生产依赖
+COPY package*.json ./
+RUN npm ci --only=production
+
+# 拷贝后端源代码
+COPY . ./
+
+# 暴露端口（与 server/package.json 中启动端口一致，Zeabur 会注入 PORT）
+EXPOSE 3000
+
+# 启动命令
+CMD ["npm", "start"]
+
 # 后端 Dockerfile
 FROM node:18-alpine
 
