@@ -32,6 +32,15 @@ export const API_CONFIG = {
   }
 };
 
+// 调试日志
+if (import.meta.env.DEV) {
+  console.log('🔍 API Config:', {
+    BASE_URL: API_CONFIG.BASE_URL,
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+    env: import.meta.env.MODE
+  });
+}
+
 // 导出辅助函数
 export const buildApiUrl = (endpoint: string): string => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;

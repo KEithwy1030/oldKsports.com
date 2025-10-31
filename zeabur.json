@@ -12,8 +12,7 @@
         "dockerfile": "Dockerfile"
       },
       "env": {
-        "NODE_ENV": "production",
-        "VITE_API_URL": "https://oldksports.com/api"
+        "NODE_ENV": "production"
       }
     },
     {
