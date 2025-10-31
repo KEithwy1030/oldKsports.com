@@ -22,12 +22,9 @@
         "type": "git",
         "rootDir": "server"
       },
-      "build": {
-        "commands": ["npm ci --production"]
-      },
       "deploy": {
-        "type": "node",
-        "startCommand": "npm start"
+        "type": "docker",
+        "dockerfile": "Dockerfile"
       },
       "env": {
         "NODE_ENV": "production",
@@ -36,8 +33,9 @@
         "MYSQL_PORT": "3306",
         "MYSQL_USERNAME": "${MYSQL_USERNAME}",
         "MYSQL_PASSWORD": "${MYSQL_PASSWORD}",
-        "MYSQL_DATABASE": "${MYSQL_DATABASE}",
-        "JWT_SECRET": "${JWT_SECRET}"
+        "MYSQL_DATABASE": "zeabur",
+        "JWT_SECRET": "${JWT_SECRET}",
+        "PORT": "8080"
       }
     }
   ]

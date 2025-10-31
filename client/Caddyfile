@@ -1,9 +1,20 @@
 :8080 {
     root * /usr/share/caddy
     
+    # 静态文件服务
+    handle /assets/* {
+        file_server
+    }
+    
     # API路由转发到后端
     handle /api/* {
-        reverse_proxy https://oldksports-app.zeabur.app
+        uri strip_prefix /api
+        reverse_proxy backend:8080 {
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-Host {http.request.host}
+            header_up X-Forwarded-For {http.request.remote}
+            header_up X-Real-IP {http.request.remote}
+        }
     }
     
     # SPA路由：所有其他请求返回index.html

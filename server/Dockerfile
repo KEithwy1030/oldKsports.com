@@ -1,7 +1,12 @@
-FROM node:18-alpine
+FROM node:22-alpine
+LABEL "language"="nodejs"
+LABEL "framework"="express"
+
 WORKDIR /app
+
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . ./
-EXPOSE 3000
-CMD ["npm", "run", "production"]
+
+EXPOSE 8080
+CMD ["npm", "start"]
