@@ -1,0 +1,75 @@
+🥳 Build completed! See "Runtime Logs" for the logs of your application.
+✅ Upload complete! Uploaded 8 blobs and updated index for e-68d7facc59ccf3857a37b922/s-68d7fdb6030e2df4a56aebb9
+✅ oci-layout | Upload complete (30 bytes)
+🚀 oci-layout | Uploading (size=30 bytes, attempt 1/3)
+📋 Uploading OCI layout metadata...
+✅ index.json | JSON upload complete (26696 bytes)
+📨 index.json | Uploading JSON (size=26696 bytes, attempt 1/3)
+📋 Uploading updated index...
+📊 Upload summary: 4 uploaded, 4 skipped (already existed)
+✅ 00367f65addfb344 | Upload complete (6107 bytes)
+✅ be012563ebce1f5e | Upload complete (165949 bytes)
+✅ 7ef88d64a9338552 | Upload complete (383 bytes)
+✅ 5c169ee8e47577a4 | Upload complete (1429 bytes)
+⏭️ 80bfbb8a41a2b27d | Layer already exists, skipping
+⏭️ b5b1d4671245435a | Layer already exists, skipping
+🚀 00367f65addfb344 | Uploading (size=6107 bytes, attempt 1/3)
+📤 00367f65addfb344 | Processing blob
+🔍 00367f65addfb344 | New blob found, uploading
+🚀 5c169ee8e47577a4 | Uploading (size=1429 bytes, attempt 1/3)
+📤 5c169ee8e47577a4 | Processing blob
+🔍 5c169ee8e47577a4 | New blob found, uploading
+⏭️ 3f2645a011051aca | Layer already exists, skipping
+🚀 7ef88d64a9338552 | Uploading (size=383 bytes, attempt 1/3)
+📤 7ef88d64a9338552 | Processing blob
+🔍 7ef88d64a9338552 | New blob found, uploading
+⏭️ 7efcbfd5ef7c1da5 | Layer already exists, skipping
+🚀 be012563ebce1f5e | Uploading (size=165949 bytes, attempt 1/3)
+📤 be012563ebce1f5e | Processing blob
+🔍 be012563ebce1f5e | New blob found, uploading
+🚀 Starting concurrent blob uploads (concurrency: 8)...
+📦 Found 8 local blobs to upload
+✅ Merged index contains 91 manifests
+🔄 Merging indexes...
+📥 Fetched remote index with 90 manifests
+🔍 Checking remote index for e-68d7facc59ccf3857a37b922/s-68d7fdb6030e2df4a56aebb9...
+📋 Loaded local index with 1 manifests
+☁️ Configured storage client for pushing images
+📦 Build completed. Ready to push.
+#15 DONE 0.6s
+#15 sending tarball 0.4s done
+#15 sending tarball
+#15 exporting config sha256:00367f65addfb3442676f17e29d62b5fa50c202aea1d468a1a94bded8d845ec2 0.0s done
+#15 exporting manifest sha256:5c169ee8e47577a4a2fcc2f3ef0eca551510c08b9844466caf9b7edf3f4d6140 0.0s done
+#15 exporting layers 0.1s done
+#15 exporting to oci image format
+#14 DONE 0.0s
+#14 [stage-1 3/3] COPY Caddyfile /etc/caddy/Caddyfile
+#13 DONE 0.1s
+#13 [stage-1 2/3] COPY --from=build /app/dist /usr/share/caddy
+#12 DONE 20.2s
+#12 17.94 ✓ built in 16.98s
+#12 17.94 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+#12 17.94 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+#12 17.94 - Using dynamic import() to code-split the application
+#12 17.94 (!) Some chunks are larger than 500 kB after minification. Consider:
+#12 17.94
+#12 17.94 dist/assets/index-C81daQ-D.js   524.40 kB │ gzip: 140.48 kB
+#12 17.94 dist/assets/router-DJLcQUwE.js   21.50 kB │ gzip:   7.88 kB
+#12 17.94 dist/assets/vendor-DOHx2j1n.js   11.21 kB │ gzip:   3.98 kB
+#12 17.94 dist/assets/index-DPKwVUV9.css   72.76 kB │ gzip:  12.25 kB
+#12 17.94 dist/index.html                   0.68 kB │ gzip:   0.40 kB
+#12 17.91 computing gzip size...
+#12 10.85 rendering chunks...
+#12 9.371 ✓ 1651 modules transformed.
+#12 5.207
+#12 5.207 90 |          <img
+#12 5.207 89 |        >
+#12 5.207    |          ^
+#12 5.207 88 |          className="focus:outline-none outline-none ring-0 focus:ring-0"
+#12 5.207 87 |          tabIndex={0}
+#12 5.207 86 |          role="button"
+#12 5.207 [plugin vite:esbuild] src/components/UserAvatar.tsx: Duplicate "className" attribute in JSX element
+#12 1.537 transforming...
+#12 0.917 vite v6.3.6 building for production...
+#12 0.454
