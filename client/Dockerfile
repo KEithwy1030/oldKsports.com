@@ -6,6 +6,8 @@ COPY package*.json ./
 RUN npm install
 COPY . ./
 RUN npm run build
-FROM zeabur/caddy-static
+FROM caddy:2-alpine
 COPY --from=build /app/dist /usr/share/caddy
+COPY Caddyfile /etc/caddy/Caddyfile
 EXPOSE 8080
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
