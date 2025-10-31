@@ -3,9 +3,7 @@
     
     # API路由转发到后端，保留/api前缀
     handle /api/* {
-        reverse_proxy http://backend:8080 {
-            header_up Host {host}
-        }
+        reverse_proxy backend:8080
     }
     
     # SPA路由：所有其他请求返回index.html
