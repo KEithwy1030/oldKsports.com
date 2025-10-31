@@ -1,7 +1,27 @@
 {
-  "services": {
-    "backend": {
-      "source": "."
+  "name": "oldksports-2.0",
+  "services": [
+    {
+      "name": "backend",
+      "source": {
+        "type": "git",
+        "rootDir": "."
+      },
+      "deploy": {
+        "type": "docker",
+        "dockerfile": "Dockerfile.server"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "8080",
+        "CORS_ORIGIN": "https://oldksports.com",
+        "JWT_SECRET": "${JWT_SECRET}",
+        "MYSQL_HOST": "${MYSQL_HOST}",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USERNAME": "${MYSQL_USERNAME}",
+        "MYSQL_PASSWORD": "${MYSQL_PASSWORD}",
+        "MYSQL_DATABASE": "zeabur_v2"
+      }
     }
-  }
+  ]
 }

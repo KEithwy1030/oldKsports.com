@@ -378,8 +378,8 @@ const startServer = async () => {
         // 先执行数据库迁移
         console.log('执行数据库迁移...');
         try {
-            const minimalMigrate = await import('./minimal-migrate.js');
-            await minimalMigrate.default();
+            const autoMigrate = await import('./auto-migrate.js');
+            await autoMigrate.default();
         } catch (migrateError) {
             console.warn('数据库迁移跳过:', migrateError.message);
             console.log('继续启动服务器...');
