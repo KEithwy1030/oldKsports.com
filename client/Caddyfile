@@ -1,19 +1,15 @@
 :8080 {
     root * /usr/share/caddy
     
-    # API 路由转发到后端
-    # 使用 Zeabur 公网域名进行反向代理
-    handle /api/* {
-        uri strip_prefix /api
-        reverse_proxy https://oldksports-app.zeabur.app {
-            header_up X-Forwarded-Proto https
-            header_up X-Forwarded-Host {http.request.host}
-        }
-    }
-    
     # 静态文件服务
     handle /assets/* {
         file_server
+    }
+    
+    # API 路由转发到后端
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy https://oldksports-app.zeabur.app
     }
     
     # SPA 路由：所有其他请求返回 index.html
@@ -22,5 +18,3 @@
         file_server
     }
 }
-
-
