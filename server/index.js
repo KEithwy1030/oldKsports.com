@@ -152,20 +152,6 @@ app.get("/api/health", (req, res) => {
 app.get("/health", (req, res) => {
   res.json({ status: "OK", message: "Server is running" });
 });
-// 根路径返回200，避免部分端口检测脚本把 GET / 视为探活
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'OldKSports Backend API',
-    version: '2.0.0',
-    endpoints: {
-      health: '/health',
-      api: '/api',
-      docs: '/api/docs'
-    },
-    timestamp: new Date().toISOString()
-  });
-});
 
 // 图片上传接口
 app.post("/api/upload/images", upload.array('images', 9), (req, res) => {
