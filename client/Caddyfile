@@ -1,18 +1,9 @@
 :8080 {
     root * /usr/share/caddy
-    
-    # 静态文件服务
-    handle /assets/* {
-        file_server
-    }
-    
-    # API 路由转发到后端
     handle /api/* {
         uri strip_prefix /api
         reverse_proxy https://oldksports-app.zeabur.app
     }
-    
-    # SPA 路由：所有其他请求返回 index.html
     handle {
         try_files {path} /index.html
         file_server
