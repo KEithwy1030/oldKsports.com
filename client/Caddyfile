@@ -5,7 +5,20 @@
     @api {
         path /api/*
     }
-    reverse_proxy @api https://oldksports-app.zeabur.app
+    reverse_proxy @api https://oldksports-app.zeabur.app {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+    
+    # 阻止访问敏感目录
+    @unsafePath {
+        path /etc/*
+        path /root/*
+        path /.env*
+        path /.git/*
+    }
+    respond @unsafePath 404
     
     # SPA路由：所有其他请求返回index.html
     try_files {path} /index.html
