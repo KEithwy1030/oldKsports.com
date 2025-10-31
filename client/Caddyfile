@@ -3,7 +3,7 @@
     
     # API路由转发到后端，保留/api前缀
     handle /api/* {
-        reverse_proxy backend:8080
+        reverse_proxy https://oldksports-app.zeabur.app
     }
     
     # SPA路由：所有其他请求返回index.html
