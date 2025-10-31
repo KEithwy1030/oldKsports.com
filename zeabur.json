@@ -7,9 +7,6 @@
         "type": "git",
         "rootDir": "client"
       },
-      "build": {
-        "commands": ["npm ci", "npm run build"]
-      },
       "deploy": {
         "type": "docker",
         "dockerfile": "Dockerfile"
