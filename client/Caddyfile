@@ -2,13 +2,14 @@
     root * /usr/share/caddy
     
     # API路由转发到后端
-    @api {
-        path /api/*
+    handle /api/* {
+        reverse_proxy https://oldksports-app.zeabur.app
     }
-    reverse_proxy @api https://oldksports-app.zeabur.app
     
     # SPA路由：所有其他请求返回index.html
-    try_files {path} /index.html
-    file_server
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
 }
 
