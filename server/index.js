@@ -379,7 +379,7 @@ app.delete("/api/admin/posts/clear", authenticateToken, async (req, res) => {
 app.use(express.static(nodePath.join(__dirname, 'public', 'dist')));
 
 // SPA 路由处理 - 所有未匹配的路由返回 index.html
-app.get('*', (req, res) => {
+app.use((req, res) => {
     res.sendFile(nodePath.join(__dirname, 'public', 'dist', 'index.html'));
 });
 
