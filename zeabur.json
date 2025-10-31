@@ -11,7 +11,8 @@
         "commands": ["npm ci", "npm run build"]
       },
       "deploy": {
-        "type": "docker"
+        "type": "docker",
+        "dockerfile": "Dockerfile"
       },
       "env": {
         "NODE_ENV": "production",
