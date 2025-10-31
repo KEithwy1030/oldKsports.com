@@ -2,34 +2,19 @@ FROM node:18-alpine AS build
 LABEL "language"="nodejs"
 LABEL "framework"="vite"
 
-ARG BACKEND_URL=http://backend:8080
-ENV VITE_BACKEND_URL=$BACKEND_URL
-
+# 当 Zeabur 根目录设置为 client 时，构建上下文就是 client/，
+# 因此这里一律使用相对路径，避免 COPY client/... 找不到目录
 WORKDIR /app
 
-COPY client/package*.json ./
+COPY package*.json ./
 RUN npm install
 
-COPY client/ ./
+COPY . ./
 RUN npm run build
 
 FROM zeabur/caddy-static
 
-# Configure Caddy with path-based routing (preserve path!)
-RUN echo ':8080 {' > /etc/caddy/Caddyfile && \
-    echo '    handle /uploads/* {' >> /etc/caddy/Caddyfile && \
-    echo '        reverse_proxy http://service-68d7fadaefadf4d878ac5329:8080' >> /etc/caddy/Caddyfile && \
-    echo '    }' >> /etc/caddy/Caddyfile && \
-    echo '    handle /api/* {' >> /etc/caddy/Caddyfile && \
-    echo '        reverse_proxy http://service-68d7fadaefadf4d878ac5329:8080' >> /etc/caddy/Caddyfile && \
-    echo '    }' >> /etc/caddy/Caddyfile && \
-    echo '    handle {' >> /etc/caddy/Caddyfile && \
-    echo '        root * /usr/share/caddy' >> /etc/caddy/Caddyfile && \
-    echo '        try_files {path} /index.html' >> /etc/caddy/Caddyfile && \
-    echo '        file_server' >> /etc/caddy/Caddyfile && \
-    echo '    }' >> /etc/caddy/Caddyfile && \
-    echo '}' >> /etc/caddy/Caddyfile
-
+# 仅作为纯静态托管，避免硬编码后端服务ID；前端通过环境变量直连 /api
 COPY --from=build /app/dist /usr/share/caddy
 
 EXPOSE 8080
