@@ -7,9 +7,6 @@
         "type": "git",
         "rootDir": "client"
       },
-      "build": {
-        "commands": ["echo 'Building frontend with Docker'"]
-      },
       "deploy": {
         "type": "docker",
         "dockerfile": "Dockerfile"
