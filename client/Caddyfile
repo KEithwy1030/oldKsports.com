@@ -5,7 +5,7 @@
     @api {
         path /api/*
     }
-    reverse_proxy @api https://oldksports-app.zeabur.app
+    reverse_proxy @api http://oldksports-app.zeabur.app
     
     # SPA路由：所有其他请求返回index.html
     try_files {path} /index.html
