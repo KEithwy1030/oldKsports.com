@@ -76,7 +76,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   if (avatar && !error) {
     return (
       <div
-        className={`relative inline-block ${className}`}
+        className={`relative inline-block ${className} focus:outline-none outline-none ring-0 focus:ring-0`}
         style={{ lineHeight: 0 }}
         data-username={username}
         onClick={(e) => {
@@ -85,7 +85,6 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         }}
         role="button"
         tabIndex={0}
-        className="focus:outline-none outline-none ring-0 focus:ring-0"
       >
         <img
           src={avatar}
