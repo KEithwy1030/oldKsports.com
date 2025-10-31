@@ -5,8 +5,8 @@ LABEL "language"="nodejs"
 WORKDIR /app
 
 # 构建前端
-COPY client/package*.json ./
-WORKDIR /app
+COPY client/package*.json ./client/
+WORKDIR /app/client
 RUN npm install
 COPY client/ ./
 RUN npm run build
@@ -25,7 +25,7 @@ COPY server/ ./
 
 # 复制前端构建输出到后端的 public 目录
 RUN mkdir -p /app/public/dist
-COPY --from=build-frontend /app/dist /app/public/dist
+COPY --from=build-frontend /app/client/dist /app/public/dist
 
 EXPOSE 8080
 CMD ["npm", "start"]
